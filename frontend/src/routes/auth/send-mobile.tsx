@@ -1,10 +1,10 @@
-import { LoginUserTypes } from "@/types/auth-types";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoginUserSchema } from "@/schemas/auth-schemas";
 import { AppErrClient } from "@/utils/app-err";
+import { createPasswordRecovery } from "@/api/auth";
 import { toast } from "@/hooks/use-toast";
 import {
+  Card,
   CardContent,
   CardDescription,
   CardFooter,
@@ -21,31 +21,40 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader, Eye, EyeOff } from "lucide-react";
+import { Loader } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { Checkbox } from "@/components/ui/checkbox";
-import OauthWrapper from "@/components/auth/oauth-wrapper";
-import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { z } from "zod";
 import { motion } from "framer-motion";
 
-const SignIn = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const form = useForm<LoginUserTypes>({
-    resolver: zodResolver(LoginUserSchema),
-    defaultValues: { mobile: "", password: "" },
+// Mobile number schema with validation
+const sendMobileSchema = z.object({
+  mobile: z.string().regex(/^[0-9]{10}$/, {
+    message: "Please enter a valid 10-digit mobile number",
+  }),
+});
+
+type sendMobileTypes = z.infer<typeof sendMobileSchema>;
+
+const SendMobile = () => {
+  const form = useForm<sendMobileTypes>({
+    resolver: zodResolver(sendMobileSchema),
+    defaultValues: {
+      mobile: "",
+    },
   });
 
-  const { loginMutation } = useAuth();
   const navigate = useNavigate();
 
-  const onSubmit = async (values: LoginUserTypes) => {
+  const onSubmit = async (values: sendMobileTypes) => {
     try {
-      const response = await loginMutation.mutateAsync(values);
-      if (response) {
-        toast({ title: "Success", description: "Logged in successfully!" });
-        navigate("/set-state");
+      const response = await createPasswordRecovery(values.mobile);
+      if (response?.$id) {
+        toast({
+          title: "Success",
+          description: "A verification code has been sent to your mobile.",
+        });
       }
+      navigate("/reset-password");
     } catch (error) {
       AppErrClient(error);
     }
@@ -53,7 +62,7 @@ const SignIn = () => {
 
   return (
     <div className="h-[calc(100vh-64px)] w-full flex bg-gradient-to-br from-black via-gray-900 to-green-900 relative overflow-hidden">
-      {/* Subtle Animated Pattern Background */}
+      {/* Background Animation */}
       <div className="absolute inset-0 opacity-20">
         <svg className="absolute top-0 left-0 w-full h-full">
           <defs>
@@ -70,7 +79,7 @@ const SignIn = () => {
         </svg>
       </div>
 
-      {/* Left Section - Welcome Message */}
+      {/* Left Section - Motivational Message */}
       <motion.div
         className="hidden lg:flex flex-col justify-center items-start w-1/2 px-16 text-white relative"
         initial={{ opacity: 0, x: -50 }}
@@ -78,7 +87,6 @@ const SignIn = () => {
         transition={{ duration: 1 }}
       >
         {/* Background Accent */}
-        {/* <div className="absolute top-1/4 left-[-50px] w-48 h-48 bg-green-500 opacity-30 blur-3xl rounded-full animate-pulse"></div> */}
 
         <motion.h1
           className="text-5xl font-extrabold leading-tight text-white drop-shadow-lg"
@@ -90,7 +98,7 @@ const SignIn = () => {
             textShadow: "0px 0px 20px rgba(34, 197, 94, 0.8)",
           }}
         >
-          Welcome Back
+          Start Fresh
         </motion.h1>
         <motion.h2
           className="text-3xl font-semibold text-green-400 mt-2"
@@ -98,7 +106,7 @@ const SignIn = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 1 }}
         >
-          Your learning journey continues
+          Reset your password & continue learning
         </motion.h2>
         <motion.p
           className="mt-6 text-lg text-gray-300 leading-relaxed max-w-md"
@@ -106,13 +114,12 @@ const SignIn = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7, duration: 1 }}
         >
-          Every great achievement starts with knowledge. Keep pushing forward,
-          one lesson at a time. Stay consistent, stay curious, and let’s build
-          something amazing together.
+          Don't let a forgotten password slow you down. Stay committed to your
+          journey and reclaim access to all your learning materials!
         </motion.p>
       </motion.div>
 
-      {/* Right Section - Login Form */}
+      {/* Right Section - Send Reset Mobile Form */}
       <motion.div
         className="flex justify-center items-center w-full lg:w-1/2 px-6"
         initial={{ opacity: 0, x: 50 }}
@@ -126,10 +133,10 @@ const SignIn = () => {
         >
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-semibold text-white">
-              Sign In
+              Forgot Password?
             </CardTitle>
             <CardDescription className="text-gray-300">
-              Access AI-driven learning tailored just for you.
+              Enter your mobile number below, and we'll send a reset code.
             </CardDescription>
           </CardHeader>
 
@@ -139,7 +146,7 @@ const SignIn = () => {
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-5"
               >
-                {/* Mobile Number Field */}
+                {/* Mobile Input */}
                 <FormField
                   control={form.control}
                   name="mobile"
@@ -151,10 +158,8 @@ const SignIn = () => {
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="+91 XXXXXXXXXX"
-                          type="tel"
-                          pattern="[0-9]{10}"
-                          maxLength={10}
+                          placeholder="1234567890"
+                          type="text"
                           className="bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:ring-green-500 focus:border-green-500"
                         />
                       </FormControl>
@@ -162,57 +167,6 @@ const SignIn = () => {
                     </FormItem>
                   )}
                 />
-
-                {/* Password Field */}
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            {...field}
-                            placeholder="••••••••"
-                            type={showPassword ? "text" : "password"}
-                            className="bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:ring-green-500 focus:border-green-500"
-                          />
-                          <button
-                            type="button"
-                            className="absolute inset-y-0 right-3 flex items-center text-gray-400"
-                            onClick={() => setShowPassword((prev) => !prev)}
-                          >
-                            {showPassword ? (
-                              <Eye size={18} />
-                            ) : (
-                              <EyeOff size={18} />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Remember Me & Forgot Password */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="remember" />
-                    <label htmlFor="remember" className="text-sm text-gray-300">
-                      Remember me
-                    </label>
-                  </div>
-                  <Button size="sm" variant="link" asChild>
-                    <Link
-                      to="/send-mail"
-                      className="text-green-400 hover:underline"
-                    >
-                      Forgot Password?
-                    </Link>
-                  </Button>
-                </div>
 
                 {/* Submit Button */}
                 <CardFooter className="flex w-full">
@@ -232,10 +186,10 @@ const SignIn = () => {
                       {form.formState.isSubmitting ? (
                         <>
                           <Loader className="mr-2 w-4 h-4 animate-spin" />{" "}
-                          Logging in...
+                          Sending...
                         </>
                       ) : (
-                        "Login"
+                        "Send Reset Code"
                       )}
                     </Button>
                   </motion.div>
@@ -244,9 +198,8 @@ const SignIn = () => {
             </Form>
           </CardContent>
 
-          {/* OAuth & Sign-up Link */}
+          {/* Sign Up Link */}
           <div className="px-8 pb-6">
-            {/* <OauthWrapper /> */}
             <p className="text-center text-sm text-gray-300 mt-4">
               Don't have an account?{" "}
               <Link
@@ -263,4 +216,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default SendMobile;
