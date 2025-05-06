@@ -22,6 +22,7 @@ import SingleLearner from "./routes/dash/single-learner"
 import Test from "./routes/dash/test"
 import SingleTest from "./routes/dash/single-test"
 import SingleTask from "./routes/dash/single-task"
+import CourseContent from "./routes/dash/CourseContent/courseContent"
 
 function App() {
   return (
@@ -55,7 +56,7 @@ function App() {
             <Route path="/learn/:id" element={<SingleLearner />} />
             <Route path="/schedule" element={<Schedules />} />
             <Route path="/schedule/:id" element={<SingleTask />} />
-            <Route path="/community" element={<Community />} />
+            <Route path="/community" element={<CourseContent />} />
           </Route>
         </Routes>
       </BrowserRouter>
