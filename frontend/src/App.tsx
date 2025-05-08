@@ -18,11 +18,11 @@ import Notion from "./routes/dash/notion"
 import FeatureSelection from "./routes/dash/feature-selection"
 import Learn from "./routes/dash/learn"
 import Schedules from "./routes/dash/schedules"
-import Community from "./routes/dash/community"
 import SingleLearner from "./routes/dash/single-learner"
 import Test from "./routes/dash/test"
 import SingleTest from "./routes/dash/single-test"
 import SingleTask from "./routes/dash/single-task"
+import CourseContent from "./routes/dash/CourseContent/courseContent"
 
 function App() {
   return (
