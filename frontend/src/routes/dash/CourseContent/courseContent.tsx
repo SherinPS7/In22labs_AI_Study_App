@@ -158,4 +158,4 @@ const CourseContent = () => {
   )
 }
 
-export default CourseContent
+export default CourseContent;
