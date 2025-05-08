@@ -5,7 +5,7 @@ import Home from "./routes/root/home"
 import Auth from "./layouts/auth"
 import SignIn from "./routes/auth/sign-in"
 import SignUp from "./routes/auth/sign-up"
-import SendMail from "./routes/auth/send-mail"
+import SendMail from "./routes/auth/send-mobile"
 import ActivateEmail from "./routes/auth/activate-email"
 import ResetPassword from "./routes/auth/reset-password"
 import Dash from "./layouts/main"
@@ -23,7 +23,6 @@ import SingleLearner from "./routes/dash/single-learner"
 import Test from "./routes/dash/test"
 import SingleTest from "./routes/dash/single-test"
 import SingleTask from "./routes/dash/single-task"
-import CourseContent from "./routes/dash/CourseContent/courseContent"
 
 function App() {
   return (
