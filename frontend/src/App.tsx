@@ -15,6 +15,7 @@ import SetRole from "./middlewares/set-role"
 import Rooms from "./routes/dash/rooms"
 import GoogleCalendar from "./routes/dash/google-calendar"
 import Notion from "./routes/dash/notion"
+import FeatureSelection from "./routes/dash/feature-selection"
 import Learn from "./routes/dash/learn"
 import Schedules from "./routes/dash/schedules"
 import Community from "./routes/dash/community"
@@ -57,6 +58,7 @@ function App() {
             <Route path="/schedule" element={<Schedules />} />
             <Route path="/schedule/:id" element={<SingleTask />} />
             <Route path="/community" element={<CourseContent />} />
+            <Route path="/feature-selection" element={<FeatureSelection />} />
           </Route>
         </Routes>
       </BrowserRouter>
