@@ -12,7 +12,7 @@ const PricingCards = () => {
 
         <main className="flex text-center flex-col gap-1">
             <h1 className="text-5xl font-medium text-foreground tracking-tight leading-tight">Pricing Plans</h1>
-            <p className="text-lg font-normal text-muted-foreground">Choose the best plan for your learning experience with Volquix</p>
+            <p className="text-lg font-normal text-muted-foreground">Choose the best plan for your learning experience with Study App</p>
 
             <main className="flex flex-row gap-4 justify-center mt-4 items-center">
                 <Button variant={"outline"} size={"sm"} asChild>

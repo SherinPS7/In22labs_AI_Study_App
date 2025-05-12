@@ -88,7 +88,7 @@ const SingleLearner = () => {
                             
                             <CardContent>
                                 <p className="text-sm line-clamp-3 font-medium text-muted-foreground">
-                                    Hi, User 122, Welcome to volquix agent get started with your learning experience.
+                                    Hi, User 122, Welcome to Study App agent get started with your learning experience.
                                 </p>
                             </CardContent>
 

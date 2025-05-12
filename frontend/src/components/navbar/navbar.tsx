@@ -1,4 +1,4 @@
-import Logo from '@/assets/logo.png';
+const Logo = '/dark1-logo.svg'
 import { Button } from '../ui/button';
 import { Link } from 'react-router-dom';
 import LogoutButton from './logout-button';

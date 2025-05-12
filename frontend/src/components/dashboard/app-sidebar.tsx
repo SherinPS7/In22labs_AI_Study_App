@@ -1,5 +1,5 @@
 import {Book, ChartArea, CircleDollarSignIcon, Hourglass, NotebookPen, Users } from "lucide-react"
-import Logo from '@/assets/logo.png';
+const Logo = '/dark1-logo.svg'
 import {
   Sidebar,
   SidebarContent,
@@ -85,7 +85,7 @@ export function AppSidebar() {
         <SidebarHeader>
             <Link to={"/"} className='flex flex-row gap-1 items-center'>
                 <img src={Logo} alt="logo" className="w-10 h-10 object-contain" />
-                <h1 className='text-xl font-semibold text-foreground tracking-tight'>Volquix</h1>
+                <h1 className='text-xl font-semibold text-foreground tracking-tight'>Study App</h1>
             </Link>
         </SidebarHeader>
       <SidebarContent>

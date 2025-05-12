@@ -1,8 +1,8 @@
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
-import Logo from '@/assets/logo.png';
+const Logo = '/dark1-logo.svg';
 import { Separator } from "../ui/separator";
 import { Link } from "react-router-dom";
-import { Button } from "../ui/button";
+import { Button } from '../ui/button';
 
 export default function Footer() {
     const quicklinks = [{
@@ -68,7 +68,7 @@ export default function Footer() {
             <Separator className="" />
 
             <main className="text-center w-full">
-                <p className="text-sm font-light text-muted-foreground tracking-tight leading-tight">&copy; Copyright {getFullyear()}, All Rights Reserved by Study App</p>
+                <p className="text-sm font-light text-muted-foreground tracking-tight leading-tight">&copy; Copyright {getFullyear()}, All Rights Reserved by In22Labs</p>
             </main>
         </footer>
     )
