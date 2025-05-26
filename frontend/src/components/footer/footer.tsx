@@ -9,29 +9,25 @@ export default function Footer() {
         text : "Home",
         link : "/"
     }, {
-        text : "Pricing",
-        link : "/pricing",
-    }, {
-        text : "Privacy Policy",
-        link : "/privacy-policy"
-    }, {
         text : "Contact Us",
         link : "/contact-us"
     }];
 
     const SocialLinks = [{
         icon : Twitter,
-        link : "#"
+        link : "https://x.com/in22labs?s=21"
     }, {
         icon : Facebook,
-        link : "#"
+        link : "https://www.facebook.com/In22Labs/"
     }, {
         icon : Instagram,
-        link : "#"
+        link : "https://www.instagram.com/in22labs?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
     }, {
         icon : Linkedin,
-        link : "#"
+        link : "https://www.linkedin.com/company/in22-labs/?originalSubdomain=in"
     }];
+
+    
 
     const getFullyear = () => {
         const date = new Date();
