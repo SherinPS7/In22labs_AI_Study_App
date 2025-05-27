@@ -2,6 +2,7 @@ require('dotenv').config(); // Load environment variables
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes/index.routes');  // Correct path to your index routes
+const streakRoutes = require('./routes/streak');  // Import your streak routes
 
 if (!process.env.DB_NAME || !process.env.DB_PASSWORD || !process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
   console.error('Missing essential environment variables. Check .env file.');
@@ -19,10 +20,9 @@ app.use(cors({
 }));
 app.use(express.json()); 
 app.use('/api', routes);
-
-
-
-// Built-in JSON parser
+app.use('/api/streaks', streakRoutes);  // Use streakRoutes under '/api/streaks'
+app.use(cors());
+app.use(express.json());  // Built-in JSON parser
 app.use(express.urlencoded({ extended: true }));
 
 // Database connection

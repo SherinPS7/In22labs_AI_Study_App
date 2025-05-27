@@ -1,19 +1,13 @@
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
-import Logo from '@/assets/logo.png';
+const Logo = '/dark1-logo.svg';
 import { Separator } from "../ui/separator";
 import { Link } from "react-router-dom";
-import { Button } from "../ui/button";
+import { Button } from '../ui/button';
 
 export default function Footer() {
     const quicklinks = [{
         text : "Home",
         link : "/"
-    }, {
-        text : "Pricing",
-        link : "/pricing",
-    }, {
-        text : "Privacy Policy",
-        link : "/privacy-policy"
     }, {
         text : "Contact Us",
         link : "/contact-us"
@@ -21,17 +15,19 @@ export default function Footer() {
 
     const SocialLinks = [{
         icon : Twitter,
-        link : "#"
+        link : "https://x.com/in22labs?s=21"
     }, {
         icon : Facebook,
-        link : "#"
+        link : "https://www.facebook.com/In22Labs/"
     }, {
         icon : Instagram,
-        link : "#"
+        link : "https://www.instagram.com/in22labs?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
     }, {
         icon : Linkedin,
-        link : "#"
+        link : "https://www.linkedin.com/company/in22-labs/?originalSubdomain=in"
     }];
+
+    
 
     const getFullyear = () => {
         const date = new Date();
@@ -68,7 +64,7 @@ export default function Footer() {
             <Separator className="" />
 
             <main className="text-center w-full">
-                <p className="text-sm font-light text-muted-foreground tracking-tight leading-tight">&copy; Copyright {getFullyear()}, All Rights Reserved by Study App</p>
+                <p className="text-sm font-light text-muted-foreground tracking-tight leading-tight">&copy; Copyright {getFullyear()}, All Rights Reserved by In22Labs</p>
             </main>
         </footer>
     )

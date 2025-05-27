@@ -11,7 +11,8 @@
 // import { CommunityEngagement } from "@/components/overview/community-engagement"
 // import { useState } from "react"
 import Footer from "@/components/footer/footer"
-import StudyStreaksWithOverlay from "@/components/overview/streaksnew"
+import StudyStreaks from "@/components/overview/streaks"
+import StudyStreaksWithOverlay from "@/components/overview/streaks-with-overlay"
 import { Planner } from "@/routes/dash/planner"
 import ContinueLearning from "../../../src/routes/dash/continue-reading"
 import StartLearning from "../../../src/routes/dash/start-learning"
@@ -22,26 +23,27 @@ const Overview = () => {
   return (
     <div className="w-full p-4">
       {/* Header */}
-      <main className="flex justify-between items-center flex-wrap gap-4">
-        {/* Left Section */}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-            Welcome Back, ABC!
-          </h1>
-          <p className="text-muted-foreground text-sm font-light tracking-tight leading-tight whitespace-normal">
-            Continue your journey with our curator
-          </p>
-        </div>
+      <main className="flex items-center gap-4 w-full">
+  {/* Left Section */}
+  <div className="flex flex-col gap-1">
+    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+      Welcome Back, ABC!
+    </h1>
+    <p className="text-muted-foreground text-sm font-light tracking-tight leading-tight whitespace-normal">
+      Continue your journey with our curator
+    </p>
+  </div>
 
-        {/* Search Bar */}
-        <div className="w-auto">
-          <input
-            type="text"
-            placeholder="Search..."
-            className="px-3 py-2 text-sm border rounded-md bg-background border-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-      </main>
+  {/* Search Bar - right aligned, full width on small screens, rounded corners */}
+  <div className="flex-1 flex justify-end md:justify-center">
+    <input
+      type="text"
+      placeholder="Search..."
+      className="w-full md:w-[58rem] px-4 py-2 text-sm border rounded-full bg-background border-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+      />
+  </div>
+</main>
+
 
       {/* Main Content */}
       <main className="flex-1 py-6 px-4 md:px-6">

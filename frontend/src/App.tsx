@@ -23,6 +23,8 @@ import Test from "./routes/dash/test"
 import SingleTest from "./routes/dash/single-test"
 import SingleTask from "./routes/dash/single-task"
 import CourseContent from "./routes/dash/CourseContent/courseContent"
+import ContactUsPage from '../../frontend/src/components/root/home/contact-us';
+
 
 function App() {
   return (
@@ -58,6 +60,7 @@ function App() {
             <Route path="/schedule/:id" element={<SingleTask />} />
             <Route path="/community" element={<CourseContent />} />
             <Route path="/feature-selection" element={<FeatureSelection />} />
+            <Route path="/contact-us" element={<ContactUsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
