@@ -1,22 +1,22 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bell, Play } from 'lucide-react'
-import { MetricCards } from "@/components/overview/metric-cards"
-import { PerformanceGraph } from "@/components/overview/performance-graph"
-import { TaskComparisonChart } from "@/components/overview/task-comparsion"
-import { SkillRadarChart } from "@/components/overview/skill-radar"
-import { ProgressTracker } from "@/components/overview/progress-tracker"
-import { ActivityTable } from "@/components/overview/activity-table"
-import { NotificationsPanel } from "@/components/overview/notifications-panel"
-import { CommunityEngagement } from "@/components/overview/community-engagement"
-import { useState } from "react"
+// import { Button } from "@/components/ui/button"
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+// import { Bell, Play } from 'lucide-react'
+// import { MetricCards } from "@/components/overview/metric-cards"
+// import { PerformanceGraph } from "@/components/overview/performance-graph"
+// import { TaskComparisonChart } from "@/components/overview/task-comparsion"
+// import { SkillRadarChart } from "@/components/overview/skill-radar"
+// import { ProgressTracker } from "@/components/overview/progress-tracker"
+// import { ActivityTable } from "@/components/overview/activity-table"
+// import { NotificationsPanel } from "@/components/overview/notifications-panel"
+// import { CommunityEngagement } from "@/components/overview/community-engagement"
+// import { useState } from "react"
 import Footer from "@/components/footer/footer"
-import StudyStreaks from "@/components/overview/streaks"
+import StudyStreaksWithOverlay from "@/components/overview/streaksnew"
 import { Planner } from "@/routes/dash/planner"
 import ContinueLearning from "../../../src/routes/dash/continue-reading"
 import StartLearning from "../../../src/routes/dash/start-learning"
 import Categories from "../../../src/routes/dash/categories"
-import LearnerLevelQuiz from "./learner-level-quiz"
+// import LearnerLevelQuiz from "./learner-level-quiz"
 
 const Overview = () => {
   return (
@@ -48,7 +48,7 @@ const Overview = () => {
         <div className="flex flex-col space-y-6">
           <div className="w-full">
             <div className="pr-4">
-              <StudyStreaks />
+              <StudyStreaksWithOverlay />
             </div>
           </div>
 
