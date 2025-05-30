@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
-const authMiddleware = require('../middleware/auth');
+// const db = require('../db');
+const db = require('../config/postgres');
 
-router.post('/update-streak', authMiddleware, async (req, res) => {
+
+router.post('/update-streak', async (req, res) => {
   const userId = req.user.id;
   const today = new Date();
   today.setHours(0, 0, 0, 0);

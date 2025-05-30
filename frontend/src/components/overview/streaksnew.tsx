@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import StudyStreaks from './streaks';
+import StudyStreaks from './StudyPlan';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const StudyStreaksWithOverlay = () => {
