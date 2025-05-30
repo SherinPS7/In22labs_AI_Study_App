@@ -1,123 +1,46 @@
-import { account } from "@/config/appwrite";
-import { AppConstants } from "@/constants/appwrite";
-import { CreateUserTypes, LoginUserTypes, VerifyUserTypes } from "@/types/auth-types";
-import { AppErrServer } from "@/utils/app-err";
-import { ID, OAuthProvider } from "appwrite";
+// src/api/auth.ts
+import { LoginUserTypes } from '@/types/auth-types';
+import axios from 'axios';
+export async function checkMobileExists(mobile: string) {
+  try {
+    const response = await axios.post("http://localhost:5000/api/auth/check-mobile", { mobile });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Error checking mobile number');
+  }
+}
+export async function CreateUser(values: { firstname: string; lastname: string; mobile: string; password: string }) {
+  try {
+    // POST request to backend sign-up endpoint
+    const response = await axios.post("http://localhost:5000/api/auth/signup", values);
+    return response.data;
+  } catch (error: any) {
+    console.error("Signup error:", error.response?.data || error.message);
+    throw error;
+  }
 
-export async function CreateUser(values : CreateUserTypes) {
+}
+
+export const LoginUser = async (data: LoginUserTypes) => {
     try {
-        const promise = await account.create(
-            ID.unique(),
-            values.email,
-            values.password,
-            `${values.firstname} ${values.lastname}`
-        );
-        return promise.$id;
-    } catch (error) {
-        AppErrServer(error);
-    }
+    const response = await axios.post("http://localhost:5000/api/auth/login", data);
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || "Login failed. Please try again.";
+    throw new Error(errorMessage); // this will be caught in your React hook
+  }
 };
 
-export async function LoginUser(values : LoginUserTypes) {
-    try {
-        const promise = await account.createEmailPasswordSession(
-            values.email,
-            values.password
-        );
-        return promise.$id;
-    } catch (error) {
-        AppErrServer(error);
-    }
-};
 
-export async function LogoutUser() {
-    try {
-        await account.deleteSession(
-            'current'
-        );
-    } catch (error) {
-        AppErrServer(error);
-    }
-};
 
-export async function GetCurrentSession() {
-    try {
-        const promise = await account.get();
-        if (!promise) {
-            return null;
-        }
-        return promise;
-    } catch (error) {
-        AppErrServer(error);
-    }
-};
+// src/api/auth.ts
 
-export async function LoginOauthgoogle() {
-    try {
-        await account.createOAuth2Session(
-            OAuthProvider.Google,
-            `${AppConstants.endpoint}/set-state`,
-            `${AppConstants.endpoint}/sign-up`
-        )
-    } catch (error) {
-        AppErrServer(error);
-    }
-};
+export const createVerification = async () => { /*...*/ };
+export const GetCurrentSession = async () => { /*...*/ };
+export const LoginOauthgoogle = async () => { /*...*/ };
+//export const LoginUser = async () => { /*...*/ };
+export const LogoutUser = async () => { /*...*/ };
+export const updateVerification = async () => { /*...*/ };
+export const updatePasswordRecovery = async () => { /*...*/ };
+export const createPasswordRecovery = async () => { /*...*/ };
 
-export async function createVerification() {
-    try {
-        const verificationUrl = AppConstants.endpoint+"/verify-user"
-        const promise = await account.createVerification(
-            verificationUrl
-        );
-
-        return promise;
-    } catch (error) {
-        AppErrServer(error);
-    }
-};
-
-export async function updateVerification(values : VerifyUserTypes) {
-    try {
-        const promise = await account.updateVerification(
-            values.userId,
-            values.secret
-        );
-        return promise;
-    } catch (error) {
-        AppErrServer(error);
-    }
-};
-
-export async function createPasswordRecovery(email : string) {
-    try {
-        const endpoint = AppConstants.endpoint+"/reset-password";
-        console.log(endpoint);
-        const promise = account.createRecovery(email, endpoint);
-        return promise;
-    } catch (error) {
-        AppErrServer(error);
-    }
-};
-
-export async function updatePasswordRecovery(values : {
-    userId : string;
-    secret : string;
-    password : string;
-    confirmpassword : string;
-}) {
-    try {   
-        if (values.password !== values.confirmpassword) {
-            throw new Error("Passwords does not match");
-        };
-
-        const promise = account.updateRecovery(
-            values.userId,
-            values.secret,
-            values.password
-        );
-        return promise;
-    } catch (error) {
-        AppErrServer(error);
-    }
-};

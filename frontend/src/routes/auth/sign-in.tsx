@@ -44,7 +44,7 @@ const SignIn = () => {
       const response = await loginMutation.mutateAsync(values);
       if (response) {
         toast({ title: "Success", description: "Logged in successfully!" });
-        navigate("/set-state");
+        navigate("/overview");
       }
     } catch (error) {
       AppErrClient(error);
