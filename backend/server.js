@@ -2,6 +2,7 @@ require('dotenv').config(); // Load environment variables
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes/index.routes');  // Correct path to your index routes
+const streakRoutes = require('./routes/streak');  // Import your streak routes
 
 // Ensure all necessary env variables are set
 if (!process.env.DB_NAME || !process.env.DB_PASSWORD ) {
