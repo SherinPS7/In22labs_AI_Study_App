@@ -29,22 +29,25 @@ import ContactUsPage from '../../frontend/src/components/root/home/contact-us';
 function App() {
   return (
     <>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Root />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/pricing" element={<Pricing />} />
-          </Route>
+<BrowserRouter>
+  <Routes>
+    {/* Public Routes */}
+    <Route element={<Root />}>
+      <Route path="/" element={<Home />} />
+      <Route path="/pricing" element={<Pricing />} />
+    </Route>
 
-          <Route path="/set-state" element={<SetRole />} />
-
-          <Route element={<Auth />}>
-            <Route path="/sign-in" element={<SignIn />} />
-            <Route path="/sign-up" element={<SignUp />} />
-            <Route path="/verify-user" element={<ActivateEmail />} />
-            <Route path="/send-mail" element={<SendMail />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-          </Route>
+    {/* Authentication Routes */}
+    <Route element={<Auth />}>
+      <Route path="/sign-in" element={<SignIn />} />
+      <Route path="/sign-up" element={<SignUp />} />
+      <Route path="/verify-user" element={<ActivateEmail />} />
+      <Route path="/send-mail" element={<SendMail />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      
+      {/* Move Feature Selection here */}
+      <Route path="/feature-selection" element={<FeatureSelection />} />
+    </Route>
 
           <Route element={<Dash />}>
             <Route path="/overview" element={<Overview />} />

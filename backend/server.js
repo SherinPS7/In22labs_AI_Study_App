@@ -1,10 +1,16 @@
 require('dotenv').config(); // Load environment variables
 const express = require('express');
 const cors = require('cors');
-const routes = require('./routes/index.routes');  // Correct path to your index routes
-// const streakRoutes = require('./routes/streak');  // Import your streak routes
+//const session = require('express-session');
+//const SequelizeStore = require('connect-session-sequelize')(session.Store);
+const { sessionMiddleware, initSessionStore } = require('./config/session');
 
-if (!process.env.DB_NAME || !process.env.DB_PASSWORD || !process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+
+const routes = require('./routes/index.routes');  // Correct path to your index routes
+//const streakRoutes = require('./routes/streak');  // Import your streak routes
+
+// Ensure all necessary env variables are set
+if (!process.env.DB_NAME || !process.env.DB_PASSWORD ) {
   console.error('Missing essential environment variables. Check .env file.');
   process.exit(1);
 }
@@ -14,15 +20,23 @@ const sequelize = require('./config/postgres');
 
 // Create Express app
 const app = express();
+// Enable CORS for specific origin
 app.use(cors({
-  origin: 'http://localhost:5173', 
+  origin: 'http://localhost:5173',  // This allows requests from your frontend URL
   credentials: true,  // If you're using cookies or authentication headers
 }));
 app.use(express.json()); 
-app.use('/api', routes);
-// app.use('/api/streaks', streakRoutes);  // Use streakRoutes under '/api/streaks'
 
-app.use(express.json());  // Built-in JSON parser
+app.use(sessionMiddleware);
+
+initSessionStore();
+
+app.use('/api', routes);
+
+
+
+
+// Built-in JSON parser
 app.use(express.urlencoded({ extended: true }));
 
 // Database connection
@@ -31,7 +45,7 @@ sequelize.authenticate()
   .catch(err => console.error('Database connection error:', err));
 
 // Sync models with the database
-sequelize.sync({force: false}) // Set to true for development to drop and recreate tables
+sequelize.sync({force: false}) // Set to true only for development
   .then(() => console.log('Database schema synced'))
   .catch(err => console.error('Database sync error:', err));
 
@@ -47,7 +61,7 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}`);
 });
