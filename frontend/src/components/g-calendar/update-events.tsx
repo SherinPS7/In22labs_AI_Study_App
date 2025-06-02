@@ -45,7 +45,7 @@ const UpdateEventDialog = () => {
                     Update Event
                 </DialogTitle>
                 <DialogDescription>
-                    Manage your events from volquix conected smoothly with your google calendar
+                    Manage your events from Study App conected smoothly with your google calendar
                 </DialogDescription>
             </DialogHeader>
             <section className='my-4'>

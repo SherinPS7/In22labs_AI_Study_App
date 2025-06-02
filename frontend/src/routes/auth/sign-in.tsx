@@ -24,9 +24,11 @@ import { Button } from "@/components/ui/button";
 import { Loader, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
-import OauthWrapper from "@/components/auth/oauth-wrapper";
+//import OauthWrapper from "@/components/auth/oauth-wrapper";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
+import { GetCurrentSession } from "@/api/auth";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 
 const SignIn = () => {
@@ -38,13 +40,26 @@ const SignIn = () => {
 
   const { loginMutation } = useAuth();
   const navigate = useNavigate();
-
+   // Add this useEffect here, just below const declarations and above onSubmit
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const session = await GetCurrentSession();
+        if (session.loggedIn) {
+          navigate("/overview");  // Redirect if session exists
+        }
+      } catch (error) {
+        // If error (no session), stay on login page
+      }
+    };
+    checkSession();
+  }, [navigate]);
   const onSubmit = async (values: LoginUserTypes) => {
     try {
       const response = await loginMutation.mutateAsync(values);
       if (response) {
         toast({ title: "Success", description: "Logged in successfully!" });
-        navigate("/feature-selection");
+        navigate("/overview");
       }
     } catch (error) {
       AppErrClient(error);
@@ -151,7 +166,7 @@ const SignIn = () => {
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="+91 XXXXXXXXXX"
+                          placeholder="XXXXXXXXXX"
                           type="tel"
                           pattern="[0-9]{10}"
                           maxLength={10}

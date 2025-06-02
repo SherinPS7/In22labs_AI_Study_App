@@ -23,6 +23,8 @@ import Test from "./routes/dash/test"
 import SingleTest from "./routes/dash/single-test"
 import SingleTask from "./routes/dash/single-task"
 import CourseContent from "./routes/dash/CourseContent/courseContent"
+import ContactUsPage from '../../frontend/src/components/root/home/contact-us';
+
 
 function App() {
   return (
@@ -47,25 +49,24 @@ function App() {
       <Route path="/feature-selection" element={<FeatureSelection />} />
     </Route>
 
-    {/* Protected Routes (Dashboard) */}
-    <Route element={<Dash />}>
-      <Route path="/set-state" element={<SetRole />} />
-      <Route path="/overview" element={<Overview />} />
-      <Route path="/rooms" element={<Rooms />} />
-      <Route path="/test" element={<Test />} />
-      <Route path="/test/:id" element={<SingleTest />} />
-      <Route path="/billing" element={<Billing />} />
-      <Route path="/connect-gcalendar" element={<GoogleCalendar />} />
-      <Route path="/connect-notion" element={<Notion />} />
-      <Route path="/learn" element={<Learn />} />
-      <Route path="/learn/:id" element={<SingleLearner />} />
-      <Route path="/schedule" element={<Schedules />} />
-      <Route path="/schedule/:id" element={<SingleTask />} />
-      <Route path="/community" element={<CourseContent />} />
-    </Route>
-  </Routes>
-</BrowserRouter>
-
+          <Route element={<Dash />}>
+            <Route path="/overview" element={<Overview />} />
+            <Route path="/rooms" element={<Rooms />} />
+            <Route path="/test" element={<Test />} /> 
+            <Route path="/test/:id" element={<SingleTest />} /> 
+            <Route path="/billing" element={<Billing />} />
+            <Route path="/connect-gcalendar" element={<GoogleCalendar />} />
+            <Route path="/connect-notion" element={<Notion />} />
+            <Route path="/learn" element={<Learn />} />
+            <Route path="/learn/:id" element={<SingleLearner />} />
+            <Route path="/schedule" element={<Schedules />} />
+            <Route path="/schedule/:id" element={<SingleTask />} />
+            <Route path="/community" element={<CourseContent />} />
+            <Route path="/feature-selection" element={<FeatureSelection />} />
+            <Route path="/contact-us" element={<ContactUsPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </>
   )
 }

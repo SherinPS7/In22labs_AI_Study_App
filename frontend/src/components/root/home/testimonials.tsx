@@ -112,7 +112,7 @@ const Testimonials = () => {
           <span className="font-semibold text-green-600 dark:text-green-400">
             truly value{" "}
           </span>
-          <span className="text-green-500 dark:text-green-300">Volquix</span> - Learning Solution.
+          <span className="text-green-500 dark:text-green-300">Study App</span> - Learning Solution.
         </p>
       </section>
 
