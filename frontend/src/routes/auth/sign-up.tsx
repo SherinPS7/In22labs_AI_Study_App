@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from 'axios';
 import { CreateUserTypes } from "@/types/auth-types";
 import { Loader, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -27,14 +28,15 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { setupRecaptcha, sendOtp } from '../../firebase/otpUtils';
 
 const SignUp = () => {
+  const [agreed, setAgreed] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const [agreed, setAgreed] = useState(false);
   const [step, setStep] = useState<"mobile" | "otp" | "form">("mobile");
   const [enteredOtp, setEnteredOtp] = useState("");
-  const DUMMY_OTP = "123456";
 
   const form = useForm<CreateUserTypes>({
     resolver: zodResolver(CreateUserSchema),
@@ -46,34 +48,85 @@ const SignUp = () => {
     },
   });
 
-  const handleSendOtp = () => {
+  // Ensure this is inside JSX:
+  // <div id="recaptcha-container"></div>
+
+  const handleSendOtp = async () => {
     const mobile = form.watch("mobile");
-    if (mobile.length >= 10) {
-      setStep("otp");
-      toast({
-        title: "OTP Sent",
-        description: "Use 123456 to verify your mobile number.",
-      });
-    } else {
+
+    if (!mobile || mobile.length < 10) {
       toast({
         title: "Invalid Number",
-        description: "Please enter a valid mobile number.",
+        description: "Please enter a valid 10-digit mobile number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Step 1: Check if mobile exists in backend
+      const res = await axios.post("http://localhost:5000/api/auth/check-mobile", { mobile });
+      if (res.data?.status === "exists") {
+        toast({
+          title: "Mobile Exists",
+          description: "This mobile number is already registered.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Step 2: Format the number
+      const formattedPhone = mobile.startsWith("+") ? mobile : `+91${mobile}`;
+
+      // Step 3: Setup Firebase Recaptcha and send OTP
+      setupRecaptcha("recaptcha-container");
+      const result = await sendOtp(formattedPhone);
+      console.log("✅ OTP sent:", result);
+      setConfirmationResult(result);
+
+      setStep("otp");
+
+      toast({
+        title: "OTP Sent",
+        description: `OTP sent to ${formattedPhone}`,
+      });
+    } catch (error: any) {
+      console.error("❌ Error sending OTP:", error);
+      toast({
+        title: "OTP Error",
+        description: error?.response?.data?.message || "Failed to send OTP",
         variant: "destructive",
       });
     }
   };
 
-  const handleVerifyOtp = () => {
-    if (enteredOtp === DUMMY_OTP) {
-      setStep("form");
+  const handleVerifyOtp = async () => {
+    try {
+      if (!confirmationResult) {
+        toast({
+          title: "Verification Error",
+          description: "No OTP session found. Please resend OTP.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const result = await confirmationResult.confirm(enteredOtp);
+      const user = result.user;
+
+      console.log("✅ OTP verified:", user);
+
       toast({
         title: "Verified",
         description: "Mobile number successfully verified.",
       });
-    } else {
+
+      setStep("form");
+    } catch (error) {
+      console.error("❌ OTP verification failed:", error);
       toast({
         title: "Invalid OTP",
-        description: "Please enter the correct OTP (123456).",
+        description: "The OTP you entered is incorrect or expired.",
         variant: "destructive",
       });
     }
@@ -87,13 +140,12 @@ const SignUp = () => {
           title: "Success",
           description: "User has been successfully created",
         });
-        navigate("/sign-in");
+        navigate("/feature-selection");
       }
     } catch (error) {
       AppErrClient(error);
     }
   };
-
   return (
     <div className="h-[calc(100vh-64px)] w-full flex bg-gradient-to-br from-black via-gray-900 to-green-900 relative overflow-hidden">
       {/* Background */}
@@ -199,13 +251,16 @@ const SignUp = () => {
                       whileTap={{ scale: 0.95 }}
                       className="w-full"
                     >
+                      <div id="recaptcha-container"></div>
+
                       <Button
                         type="button"
                         className="w-full bg-green-600 hover:bg-green-700 text-white"
                         onClick={handleSendOtp}
                       >
-                        Verify Mobile Number
+                       Get Otp
                       </Button>
+                      <div id="recaptcha-container"></div>
                     </motion.div>
                   </CardFooter>
                 )}
@@ -257,6 +312,8 @@ const SignUp = () => {
                         </FormItem>
                       )}
                     />
+                    
+
 
                     <FormField
                       control={form.control}
@@ -332,20 +389,20 @@ const SignUp = () => {
                         className="w-full"
                       >
                         <Button
-                          //disabled={form.formState.isSubmitting}
-                          variant="default"
-                          className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold transition-all shadow-lg"
-                          disabled={!agreed}
-                        >
-                          {form.formState.isSubmitting ? (
-                            <>
-                              <Loader className="mr-2 w-4 h-4 animate-spin" />{" "}
-                              Signing in...
-                            </>
-                          ) : (
-                            "Sign Up"
-                          )}
-                        </Button>
+  type="submit"
+  disabled={!agreed || form.formState.isSubmitting}
+  variant="default"
+  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold transition-all shadow-lg"
+>
+  {form.formState.isSubmitting ? (
+    <span className="flex items-center justify-center gap-2">
+      <Loader className="animate-spin w-4 h-4" />
+      Creating Account...
+    </span>
+  ) : (
+    "Create Account"
+  )}
+</Button>
                       </motion.div>
                     </CardFooter>
                   </>

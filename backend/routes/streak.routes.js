@@ -1,8 +1,12 @@
-const express = require('express');
-const router = express.Router();
-const streakController = require('../controllers/streak.controller');
+// const express = require('express');
+// const router = express.Router();
+// const streakController = require('../controllers/streak.controller');
+// const authMiddleware = require('../middleware/auth');
 
-router.get('/:userId', streakController.getStreak);
-router.post('/:userId', streakController.updateStreak);
+// // Get streak for a user
+// router.get('/:userId', authMiddleware, streakController.getStreak);
 
-module.exports = router;
+// // Update streak for a user
+// router.post('/:userId', authMiddleware, streakController.updateStreak);
+
+// module.exports = router;
