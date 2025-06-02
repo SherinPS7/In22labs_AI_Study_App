@@ -1,14 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const userFeaturesController = require('../controllers/userFeatures.controller'); 
+const userFeaturesController = require('../controllers/userFeatures.controller');  // Importing the controller
 
-// Route to get all user features 
-router.get('/features',  userFeaturesController.getUserFeatures);
-
-// Route to get a specific user feature
-router.get('/features/:feature_name', userFeaturesController.getUserFeature);
-
-// Route to create or update a user feature 
-router.post('/features', userFeaturesController.setUserFeature);
+// Route to save selected features
+router.post('/save-features', userFeaturesController.saveFeatures);  // Ensures saveFeatures is used as the handler
 
 module.exports = router;

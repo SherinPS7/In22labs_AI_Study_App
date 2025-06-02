@@ -24,7 +24,7 @@ createdAt: 'created_at', // use custom name for createdAt
     User.hasMany(models.StudyPlan, { foreignKey: 'user_id_foreign_key' });
     User.hasMany(models.QuizScore, { foreignKey: 'user_id_foreign_key' });
     User.hasMany(models.AssessmentScore, { foreignKey: 'user_id_foreign_key' });
-    User.hasMany(models.UserFeatures, { foreignKey: 'user_id_foreign_key' });
+    // User.hasMany(models.UserFeatures, { foreignKey: 'user_id_foreign_key' });
     User.hasMany(models.ToDoList, { foreignKey: 'user_id_foreign_key' });
   };
 
