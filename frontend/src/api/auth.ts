@@ -11,6 +11,8 @@ export async function checkMobileExists(mobile: string) {
 }
 export async function CreateUser(values: { firstname: string; lastname: string; mobile: string; password: string }) {
   try {
+    console.log("Sending values:", values); // <-- add this line
+
     // POST request to backend sign-up endpoint
     const response = await axios.post("http://localhost:5000/api/auth/signup", values);
     return response.data;
@@ -23,7 +25,9 @@ export async function CreateUser(values: { firstname: string; lastname: string; 
 
 export const LoginUser = async (data: LoginUserTypes) => {
     try {
-    const response = await axios.post("http://localhost:5000/api/auth/login", data);
+    const response = await axios.post("http://localhost:5000/api/auth/login", data,{
+      withCredentials: true, // Include credentials for session management
+    });
     return response.data;
   } catch (error: any) {
     const errorMessage = error.response?.data?.message || "Login failed. Please try again.";
@@ -31,12 +35,25 @@ export const LoginUser = async (data: LoginUserTypes) => {
   }
 };
 
-
+export const GetCurrentSession = async () => {
+  try {
+    const response = await axios.get("http://localhost:5000/api/session/check-session", {
+      withCredentials: true, // Important to send cookies/session id
+    });
+    return response.data; // This will be your session info or loggedIn status
+  } catch (error: any) {
+    // If session not found or error, return loggedIn false or throw
+    if (error.response && error.response.status === 401) {
+      return { loggedIn: false };
+    }
+    throw new Error(error.response?.data?.message || "Failed to get session");
+  }
+};
 
 // src/api/auth.ts
 
 export const createVerification = async () => { /*...*/ };
-export const GetCurrentSession = async () => { /*...*/ };
+//export const GetCurrentSession = async () => { /*...*/ };
 export const LoginOauthgoogle = async () => { /*...*/ };
 //export const LoginUser = async () => { /*...*/ };
 export const LogoutUser = async () => { /*...*/ };

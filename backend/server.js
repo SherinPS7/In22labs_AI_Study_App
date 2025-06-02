@@ -1,8 +1,13 @@
 require('dotenv').config(); // Load environment variables
 const express = require('express');
 const cors = require('cors');
+//const session = require('express-session');
+//const SequelizeStore = require('connect-session-sequelize')(session.Store);
+const { sessionMiddleware, initSessionStore } = require('./config/session');
+
+
 const routes = require('./routes/index.routes');  // Correct path to your index routes
-const streakRoutes = require('./routes/streak');  // Import your streak routes
+//const streakRoutes = require('./routes/streak');  // Import your streak routes
 
 // Ensure all necessary env variables are set
 if (!process.env.DB_NAME || !process.env.DB_PASSWORD ) {
@@ -21,6 +26,11 @@ app.use(cors({
   credentials: true,  // If you're using cookies or authentication headers
 }));
 app.use(express.json()); 
+
+app.use(sessionMiddleware);
+
+initSessionStore();
+
 app.use('/api', routes);
 
 

@@ -22,7 +22,9 @@ exports.checkMobile = async (req, res) => {
 
 // ✅ Final Signup (after OTP is verified on frontend)
 exports.signup = async (req, res) => {
-  const { first_name, last_name, mobile, password } = req.body;
+  const { firstname, lastname, mobile, password } = req.body;
+   //console.log("Backend received:", req.body);  // <-- add this line
+
 
   try {
     // Optional: You may recheck if user already exists (safety)
@@ -36,11 +38,12 @@ exports.signup = async (req, res) => {
 
     // Create new user
     const newUser = await User.create({
-      first_name,
-      last_name,
+      first_name:firstname,
+      last_name:lastname,
       mobile,
       password: hashedPassword,
     });
+    console.log("Created user:", newUser.toJSON());
 
     return res.status(200).json({ message: 'User created successfully', userId: newUser.id });
   } catch (err) {
@@ -67,7 +70,11 @@ exports.login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Incorrect password' });
     }
-
+      // Store user info in session
+    req.session.userId = user.id;
+    req.session.firstname = user.first_name;
+    req.session.lastname = user.last_name;
+    req.session.mobile = user.mobile;
     return res.status(200).json({
       message: 'Login successful',
       user: {
