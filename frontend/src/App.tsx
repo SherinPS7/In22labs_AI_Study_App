@@ -27,40 +27,45 @@ import CourseContent from "./routes/dash/CourseContent/courseContent"
 function App() {
   return (
     <>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Root />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/pricing" element={<Pricing />} />
-          </Route>
+<BrowserRouter>
+  <Routes>
+    {/* Public Routes */}
+    <Route element={<Root />}>
+      <Route path="/" element={<Home />} />
+      <Route path="/pricing" element={<Pricing />} />
+    </Route>
 
-          <Route path="/set-state" element={<SetRole />} />
+    {/* Authentication Routes */}
+    <Route element={<Auth />}>
+      <Route path="/sign-in" element={<SignIn />} />
+      <Route path="/sign-up" element={<SignUp />} />
+      <Route path="/verify-user" element={<ActivateEmail />} />
+      <Route path="/send-mail" element={<SendMail />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      
+      {/* Move Feature Selection here */}
+      <Route path="/feature-selection" element={<FeatureSelection />} />
+    </Route>
 
-          <Route element={<Auth />}>
-            <Route path="/sign-in" element={<SignIn />} />
-            <Route path="/sign-up" element={<SignUp />} />
-            <Route path="/verify-user" element={<ActivateEmail />} />
-            <Route path="/send-mail" element={<SendMail />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-          </Route>
+    {/* Protected Routes (Dashboard) */}
+    <Route element={<Dash />}>
+      <Route path="/set-state" element={<SetRole />} />
+      <Route path="/overview" element={<Overview />} />
+      <Route path="/rooms" element={<Rooms />} />
+      <Route path="/test" element={<Test />} />
+      <Route path="/test/:id" element={<SingleTest />} />
+      <Route path="/billing" element={<Billing />} />
+      <Route path="/connect-gcalendar" element={<GoogleCalendar />} />
+      <Route path="/connect-notion" element={<Notion />} />
+      <Route path="/learn" element={<Learn />} />
+      <Route path="/learn/:id" element={<SingleLearner />} />
+      <Route path="/schedule" element={<Schedules />} />
+      <Route path="/schedule/:id" element={<SingleTask />} />
+      <Route path="/community" element={<CourseContent />} />
+    </Route>
+  </Routes>
+</BrowserRouter>
 
-          <Route element={<Dash />}>
-            <Route path="/overview" element={<Overview />} />
-            <Route path="/rooms" element={<Rooms />} />
-            <Route path="/test" element={<Test />} /> 
-            <Route path="/test/:id" element={<SingleTest />} /> 
-            <Route path="/billing" element={<Billing />} />
-            <Route path="/connect-gcalendar" element={<GoogleCalendar />} />
-            <Route path="/connect-notion" element={<Notion />} />
-            <Route path="/learn" element={<Learn />} />
-            <Route path="/learn/:id" element={<SingleLearner />} />
-            <Route path="/schedule" element={<Schedules />} />
-            <Route path="/schedule/:id" element={<SingleTask />} />
-            <Route path="/community" element={<CourseContent />} />
-            <Route path="/feature-selection" element={<FeatureSelection />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
     </>
   )
 }

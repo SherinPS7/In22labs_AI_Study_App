@@ -72,9 +72,9 @@ const sequelize = require('./config/postgres');
 
 // Create Express app
 const app = express();
-app.use('/api', routes);
 app.use(cors());
 app.use(express.json());  // Built-in JSON parser
+app.use('/api', routes);
 app.use(express.urlencoded({ extended: true }));
 
 // Database connection
@@ -83,7 +83,7 @@ sequelize.authenticate()
   .catch(err => console.error('Database connection error:', err));
 
 // Sync models with the database
-sequelize.sync({ force: false })
+sequelize.sync({alter : true})
   .then(() => console.log('Database schema synced'))
   .catch(err => console.error('Database sync error:', err));
 
