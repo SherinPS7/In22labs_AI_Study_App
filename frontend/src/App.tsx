@@ -29,12 +29,13 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 function App() {
   return (
     <>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Root />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/pricing" element={<Pricing />} />
-          </Route>
+<BrowserRouter>
+  <Routes>
+    {/* Public Routes */}
+    <Route element={<Root />}>
+      <Route path="/" element={<Home />} />
+      <Route path="/pricing" element={<Pricing />} />
+    </Route>
 
           <Route path="/set-state" element={<SetRole />} />
 
