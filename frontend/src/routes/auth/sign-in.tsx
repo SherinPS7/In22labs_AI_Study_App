@@ -19,6 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useCheckSession } from "@/hooks/use-check-session";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader, Eye, EyeOff } from "lucide-react";
@@ -40,20 +41,7 @@ const SignIn = () => {
 
   const { loginMutation } = useAuth();
   const navigate = useNavigate();
-   // Add this useEffect here, just below const declarations and above onSubmit
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const session = await GetCurrentSession();
-        if (session.loggedIn) {
-          navigate("/overview");  // Redirect if session exists
-        }
-      } catch (error) {
-        // If error (no session), stay on login page
-      }
-    };
-    checkSession();
-  }, [navigate]);
+   useCheckSession();
   const onSubmit = async (values: LoginUserTypes) => {
     try {
       const response = await loginMutation.mutateAsync(values);
@@ -221,7 +209,7 @@ const SignIn = () => {
                   </div>
                   <Button size="sm" variant="link" asChild>
                     <Link
-                      to="/send-mail"
+                      to="/send-mobile"
                       className="text-green-400 hover:underline"
                     >
                       Forgot Password?

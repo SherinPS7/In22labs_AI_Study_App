@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useEffect } from "react"; // ← ensure this is imported
+
 import axios from 'axios';
 import { CreateUserTypes } from "@/types/auth-types";
 import { Loader, Eye, EyeOff } from "lucide-react";
@@ -23,6 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useCheckSession } from "@/hooks/use-check-session";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -50,6 +53,9 @@ const SignUp = () => {
 
   // Ensure this is inside JSX:
   // <div id="recaptcha-container"></div>
+// useEffect(() => {
+//   setupRecaptcha("recaptcha-container");
+// }, []);
 
   const handleSendOtp = async () => {
     const mobile = form.watch("mobile");
@@ -131,7 +137,7 @@ const SignUp = () => {
       });
     }
   };
-
+  useCheckSession();
   const onSubmit = async (values: CreateUserTypes) => {
     try {
       const response = await CreateUser(values);
@@ -260,7 +266,7 @@ const SignUp = () => {
                       >
                        Get Otp
                       </Button>
-                      <div id="recaptcha-container"></div>
+                      {/* <div id="recaptcha-container"></div> */}
                     </motion.div>
                   </CardFooter>
                 )}

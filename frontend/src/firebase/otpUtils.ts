@@ -7,35 +7,21 @@ import {
 
 let recaptchaVerifier: RecaptchaVerifier | null = null;
 
-export const setupRecaptcha = (containerId: string = "recaptcha-container") => {
-  const containerElement = document.getElementById(containerId);
-  if (!containerElement) {
-    throw new Error(`Element with ID '${containerId}' not found`);
-  }
-
+export const setupRecaptcha = (containerId: string) => {
   if (!recaptchaVerifier) {
-    recaptchaVerifier = new RecaptchaVerifier(
-      auth, // ✅ Auth object first
-      containerId, // ✅ Then container ID
-      {
-        size: "invisible",
-        callback: (response: string) => {
-          console.log("✅ reCAPTCHA solved", response);
-        },
-        "expired-callback": () => {
-          console.warn("⚠️ reCAPTCHA expired");
-        },
+    recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+      size: "invisible",
+      callback: () => console.log("reCAPTCHA solved"),
+      "expired-callback": () => {
+        recaptchaVerifier = null;  // reset on expiry
       }
-    );
-    recaptchaVerifier.render().then((widgetId) => {
-      console.log("🔒 reCAPTCHA widget ID:", widgetId);
     });
+    recaptchaVerifier.render();
   }
-
   return recaptchaVerifier;
 };
 
-export const sendOtp = async (phoneNumber: string): Promise<ConfirmationResult> => {
-  if (!recaptchaVerifier) throw new Error("❌ reCAPTCHA not initialized");
+export const sendOtp = async (phoneNumber: string) => {
+  if (!recaptchaVerifier) throw new Error("reCAPTCHA not initialized");
   return await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
 };
