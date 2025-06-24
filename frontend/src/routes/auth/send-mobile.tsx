@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AppErrClient } from "@/utils/app-err";
-import { createPasswordRecovery } from "@/api/auth";
+//import { createPasswordRecovery } from "@/api/auth";
 import { toast } from "@/hooks/use-toast";
+import { checkMobileForReset } from "@/api/auth"; // ✅ Just like Sign-Up
 import {
   Card,
   CardContent,
@@ -25,6 +26,13 @@ import { Loader } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { motion } from "framer-motion";
+// import { auth } from "@/firebase/firebase";
+// import {
+//   RecaptchaVerifier,
+//   signInWithPhoneNumber,
+// } from "firebase/auth";
+import { setupRecaptcha, sendOtp } from "@/firebase/otpUtils"; // ✅ Just like Sign-Up
+
 
 // Mobile number schema with validation
 const sendMobileSchema = z.object({
@@ -45,20 +53,95 @@ const SendMobile = () => {
 
   const navigate = useNavigate();
 
-  const onSubmit = async (values: sendMobileTypes) => {
-    try {
-      const response = await createPasswordRecovery(values.mobile);
-      if (response?.$id) {
-        toast({
-          title: "Success",
-          description: "A verification code has been sent to your mobile.",
-        });
-      }
-      navigate("/reset-password");
-    } catch (error) {
-      AppErrClient(error);
-    }
-  };
+//  const onSubmit = async (values: sendMobileTypes) => {
+//   try {
+//     // ✅ Step 1: Check if mobile exists in DB for reset
+//     await checkMobileForReset(values.mobile);
+
+//     const phoneNumber = `+91${values.mobile}`;
+//     localStorage.setItem("resetMobile", values.mobile);
+
+//     // ✅ Step 2: Setup Firebase Recaptcha
+//     setupRecaptcha("recaptcha-container");
+
+//     // ✅ Step 3: Send OTP
+//     const confirmationResult = await sendOtp(phoneNumber);
+
+//     // ✅ Step 4: Store result for later OTP verification
+//     localStorage.setItem(
+//       "resetConfirmationResult",
+//       JSON.stringify(confirmationResult)
+//     );
+
+//     toast({
+//       title: "Success",
+//       description: "OTP sent successfully!",
+//     });
+
+//     // ✅ Step 5: Go to reset password page (where OTP gets verified inline)
+//     navigate("/reset-password");
+    
+//   } catch (error) {
+//     AppErrClient(error); // centralized error handling ✅
+//   }
+// };
+
+// const onSubmit = async (values: sendMobileTypes) => {
+//   try {
+//     await checkMobileForReset(values.mobile);
+
+//     const phoneNumber = `+91${values.mobile}`;
+//     localStorage.setItem("resetMobile", values.mobile);
+
+//     setupRecaptcha("recaptcha-container");
+//     const confirmationResult = await sendOtp(phoneNumber);
+//       // ✅ Log confirmationResult for debugging
+//     console.log("📦 Firebase confirmationResult:", confirmationResult);
+//     // 🔁 Store in global window instead of localStorage
+//     (window as any).confirmationResult = confirmationResult;
+
+//     toast({
+//       title: "Success",
+//       description: "OTP sent successfully!",
+//     });
+
+//     navigate("/reset-password");
+//   } catch (error) {
+//     AppErrClient(error);
+//   }
+// };
+
+const onSubmit = async (values: sendMobileTypes) => {
+  try {
+    // ✅ Step 1: Check if mobile exists in DB
+    await checkMobileForReset(values.mobile);
+
+    const phoneNumber = `+91${values.mobile}`;
+
+    // ✅ Step 2: Store mobile in localStorage (needed later for password reset)
+    //localStorage.setItem("resetMobile", values.mobile);
+
+    // ✅ Step 3: Setup invisible Firebase reCAPTCHA
+    setupRecaptcha("recaptcha-container");
+
+    // ✅ Step 4: Send OTP using Firebase
+    const confirmationResult = await sendOtp(phoneNumber);
+
+    // ✅ Step 5: Log & store confirmationResult in window (NOT localStorage)
+    console.log("📦 Firebase confirmationResult:", confirmationResult);
+    (window as any).confirmationResult = confirmationResult;
+
+    // ✅ Step 6: Success toast and redirect
+    toast({
+      title: "Success",
+      description: "OTP sent successfully!",
+    });
+
+    navigate("/reset-password");
+  } catch (error) {
+    AppErrClient(error);
+  }
+};
 
   return (
     <div className="h-[calc(100vh-64px)] w-full flex bg-gradient-to-br from-black via-gray-900 to-green-900 relative overflow-hidden">
@@ -212,6 +295,7 @@ const SendMobile = () => {
           </div>
         </motion.div>
       </motion.div>
+       <div id="recaptcha-container"></div>
     </div>
   );
 };

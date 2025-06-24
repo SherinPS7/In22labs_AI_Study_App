@@ -5,7 +5,7 @@ import Home from "./routes/root/home"
 import Auth from "./layouts/auth"
 import SignIn from "./routes/auth/sign-in"
 import SignUp from "./routes/auth/sign-up"
-import SendMail from "./routes/auth/send-mobile"
+import SendMobile from "./routes/auth/send-mobile"
 import ActivateEmail from "./routes/auth/activate-email"
 import ResetPassword from "./routes/auth/reset-password"
 import Dash from "./layouts/main"
@@ -24,7 +24,7 @@ import SingleTest from "./routes/dash/single-test"
 import SingleTask from "./routes/dash/single-task"
 import CourseContent from "./routes/dash/CourseContent/courseContent"
 import ContactUsPage from '../../frontend/src/components/root/home/contact-us';
-
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 function App() {
   return (
@@ -42,11 +42,17 @@ function App() {
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/verify-user" element={<ActivateEmail />} />
-            <Route path="/send-mail" element={<SendMail />} />
+            <Route path="/send-mobile" element={<SendMobile />} />
             <Route path="/reset-password" element={<ResetPassword />} />
           </Route>
 
-          <Route element={<Dash />}>
+          <Route
+          element={
+            <ProtectedRoute>
+              <Dash />
+            </ProtectedRoute>
+          }
+        >
             <Route path="/overview" element={<Overview />} />
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/test" element={<Test />} /> 

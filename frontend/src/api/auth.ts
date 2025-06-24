@@ -49,14 +49,50 @@ export const GetCurrentSession = async () => {
     throw new Error(error.response?.data?.message || "Failed to get session");
   }
 };
+// src/api/auth.ts
+export const LogoutUser = async () => {
+  try {
+    const response = await axios.post(
+      "http://localhost:5000/api/auth/logout",
+      {},
+      { withCredentials: true } // Ensure cookies are included
+    );
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || "Logout failed";
+    throw new Error(errorMessage);
+  }
+};
+// For FORGOT PASSWORD flow
+export async function checkMobileForReset(mobile: string) {
+  try {
+    const response = await axios.post("http://localhost:5000/api/auth/forgot/check-mobile", { mobile });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Error checking mobile number for reset');
+  }
+}
+
 
 // src/api/auth.ts
+export const resetPassword = async (mobile: string, newPassword: string) => {
+  try {
+    const response = await axios.post("http://localhost:5000/api/auth/reset-password", {
+      mobile,
+      newPassword,
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to reset password");
+  }
+};
+
 
 export const createVerification = async () => { /*...*/ };
 //export const GetCurrentSession = async () => { /*...*/ };
 export const LoginOauthgoogle = async () => { /*...*/ };
 //export const LoginUser = async () => { /*...*/ };
-export const LogoutUser = async () => { /*...*/ };
+//export const LogoutUser = async () => { /*...*/ };
 export const updateVerification = async () => { /*...*/ };
 export const updatePasswordRecovery = async () => { /*...*/ };
 export const createPasswordRecovery = async () => { /*...*/ };

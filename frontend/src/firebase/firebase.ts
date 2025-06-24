@@ -1,20 +1,19 @@
-// src/firebase/firebase.ts
 import { initializeApp } from "firebase/app";
+//import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAnE84EoHWRk4gD3Lk3kQT2g-DdfYwAmKs",
-  authDomain: "otp-proj-ee9f4.firebaseapp.com",
-  projectId: "otp-proj-ee9f4",
-  storageBucket: "otp-proj-ee9f4.appspot.com",  // Corrected!
-  messagingSenderId: "466966690702",
-  appId: "1:466966690702:web:b8dc29747f1a4167e142df",
-  measurementId: "G-XTWVSHK8QQ",
+  apiKey: "AIzaSyBqeQQpG0BCSPQeyLYRJhYnfz3WVayOhM8",
+  authDomain: "inlabapp-10c95.firebaseapp.com",
+  projectId: "inlabapp-10c95",
+ // storageBucket: "inlabapp-10c95.appspot.com",  // corrected here
+ storageBucket: "inlabapp-10c95.firebasestorage.app",
+  messagingSenderId: "154208016644",
+  appId: "1:154208016644:web:5becb0758534aaf8461851",
+  measurementId: "G-Z0MDZ5HXLT"
 };
 
-// Initialize Firebase app
 const app = initializeApp(firebaseConfig);
+//const analytics = getAnalytics(app);
 
-// Export Auth for OTP usage
 export const auth = getAuth(app);

@@ -134,3 +134,18 @@ exports.checkMobileForReset = async (req, res) => {
   }
 };
 
+// ✅ New: Logout
+exports.logout = (req, res) => {
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Logout error:', err);
+        return res.status(500).json({ message: 'Error during logout' });
+      } else {
+        return res.status(200).json({ message: 'Logout successful' });
+      }
+    });
+  } else {
+    return res.status(200).json({ message: 'No session to logout' });
+  }
+};
