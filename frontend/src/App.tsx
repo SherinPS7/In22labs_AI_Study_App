@@ -24,12 +24,15 @@ import SingleTest from "./routes/dash/single-test"
 import SingleTask from "./routes/dash/single-task"
 import CourseContent from "./routes/dash/CourseContent/courseContent"
 import ContactUsPage from '../../frontend/src/components/root/home/contact-us';
+import MyLearnings from "./routes/dash/MyLearnings/myLearnings"
+import ScrollToTop from "./utils/scrollToTop"
 
 
 function App() {
   return (
     <>
 <BrowserRouter>
+    <ScrollToTop />
   <Routes>
     {/* Public Routes */}
     <Route element={<Root />}>
@@ -61,7 +64,8 @@ function App() {
             <Route path="/learn/:id" element={<SingleLearner />} />
             <Route path="/schedule" element={<Schedules />} />
             <Route path="/schedule/:id" element={<SingleTask />} />
-            <Route path="/community" element={<CourseContent />} />
+            <Route path="/course/:courseId" element={<CourseContent />} />
+            <Route path="/mylearnings" element={<MyLearnings />} />
             <Route path="/feature-selection" element={<FeatureSelection />} />
             <Route path="/contact-us" element={<ContactUsPage />} />
           </Route>

@@ -1,4 +1,4 @@
-import {Book, ChartArea, CircleDollarSignIcon, Hourglass, NotebookPen, Users } from "lucide-react"
+import {Book, ChartArea, CircleDollarSignIcon, Hourglass, Notebook, NotebookPen, Users } from "lucide-react"
 const Logo = '/dark1-logo.svg'
 import {
   Sidebar,
@@ -73,10 +73,17 @@ const billing = [
 
 const community = [
   {
-    title : "Community",
-    url : "/community",
+    title : "Course",
+    url : "/course/21",
     icon : Users
+  },
+  {
+    title : "My Learnings",
+    url : "/mylearnings",
+    icon : Notebook
   }
+
+
 ]
 
 export function AppSidebar() {
