@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { GetCurrentSession, LoginOauthgoogle, LoginUser, LogoutUser } from "@/api/auth";
 import { LoginUserTypes } from "@/types/auth-types";
+import axios from "axios";
 
 export const useAuth = () => {
     const queryClient = useQueryClient();

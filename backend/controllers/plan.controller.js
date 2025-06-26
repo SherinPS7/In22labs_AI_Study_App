@@ -1,4 +1,6 @@
 const { StudyPlan } = require('../models'); // ✅ Correct model import
+const db = require('../models');
+const Studyplan = db.StudyPlan; // Assuming Studyplan is defined in your models
 
 exports.getAllPlans = async (req, res) => {
   try {

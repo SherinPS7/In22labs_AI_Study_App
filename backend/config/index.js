@@ -1,6 +1,6 @@
 // config/index.js
 module.exports = {
-    firebase: require('./firebase'),
+    //firebase: require('./firebase'),
     googleCalendar: require('./googlecalendar'),
     notion: require('./notion'),
     openai: require('./openai'),

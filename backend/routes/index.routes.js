@@ -1,4 +1,5 @@
 const express = require('express');
+// const { route } = require('./auth.routes');
 const router = express.Router();
 
 router.use('/auth', require('./auth.routes'));
@@ -12,5 +13,11 @@ router.use('/features', require('./userFeatures.routes'));
 router.use('/gamification', require('./gamification.routes'));  
 router.use('/recommendations', require('./recc.routes'));// Add this line for session routes:
 router.use('/session', require('./session.routes'));  
-router.use('/notion', require('./notion.routes')); // Add this line for Notion routes
+
+router.use('/videos', require('./video.routes'));
+
+router.use('/courses', require('./course.routes'));
+
+router.use('/keywords', require('./keywords.routes'));
+
 module.exports = router;

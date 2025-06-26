@@ -2,17 +2,28 @@
 require('dotenv').config(); // Load environment variables
 const express = require('express');
 const cors = require('cors');
+//const session = require('express-session');
+//const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const { sessionMiddleware, initSessionStore } = require('./config/session');
 const routes = require('./routes/index.routes');  // Correct path to your index routes
+//const streakRoutes = require('./routes/streak');  // Import your streak routes
+
+// Ensure all necessary env variables are set
+if (!process.env.DB_NAME || !process.env.DB_PASSWORD ) {
+  console.error('Missing essential environment variables. Check .env file.');
+  process.exit(1);
+}
+
+// Initialize Firebase Admin (from config/)
 const sequelize = require('./config/postgres');
 
 // Create Express app
 const app = express();
-
-// CORS setup
+// Enable CORS for specific origin
 app.use(cors({
-  origin: 'http://localhost:5173', // Frontend URL
-  credentials: true,              // Required to pass cookies
+  //origin: '*',  // This allows requests from your frontend URL
+  origin:'http://localhost:5173',
+  credentials: true,  // If you're using cookies or authentication headers
 }));
 
 // Body parsers
@@ -29,15 +40,20 @@ initSessionStore();
 app.use('/api', routes);
 
 
-// DB connect
+
+
+// Built-in JSON parser
+app.use(express.urlencoded({ extended: true }));
+
+// Database connection
 sequelize.authenticate()
   .then(() => console.log('Database connected successfully'))
   .catch(err => console.error(' Database connection error:', err));
 
-// Sync models
-sequelize.sync({ alter:true})//alter:true
-  .then(() => console.log(' Database schema synced'))
-  .catch(err => console.error(' Database sync error:', err));
+// Sync models with the database
+sequelize.sync({alter: true}) // Set to true only for development alter: true force: false
+  .then(() => console.log('Database schema synced'))
+  .catch(err => console.error('Database sync error:', err));
 
 // Error middleware
 app.use((err, req, res, next) => {
@@ -45,7 +61,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-// 404 fallback
+
+// 404 Handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
@@ -54,5 +71,5 @@ app.use((req, res) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(` Server listening on port ${PORT}`);
+  console.log(`Listening on port ${PORT}`);
 });

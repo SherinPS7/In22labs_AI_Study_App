@@ -1,19 +1,68 @@
-import { Button } from "@/components/ui/button"
-import { get } from "http";
 
 import { ArrowDown, ArrowUp, ArrowUpDown, Crown, Plus } from "lucide-react"
-import { useState } from "react";
-import { Link } from "react-router-dom"
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom"
 import Content from "./content";
 import Quizes from "./quizes";
 import FinalAssessment from "./finalAssessment";
 import AlternativeContent from "./alternativeContent";
+import axios from "axios";
+
 
 const CourseContent = () => {
+
+  const backendURL = import.meta.env.VITE_BACKEND_URL;
+  const { courseId } = useParams();
+
+  const [courseName, setCourseName] = useState("");
+  const [courseKeywords, setCourseKeywords] = useState([]);
+
 
   const [sortOrder, setSortOrder] = useState("");
   const [sortViewCount, setSortViewCount] = useState("");
   const [sortLikes, setSortLikes] = useState("");
+
+  useEffect(() => {
+      const getCourseName = async () => {
+
+      try {
+        const response = await axios.get(`${backendURL}/courses/${courseId}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            // 'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        setCourseName(response.data.course_name);
+      }
+      catch (error) {
+        console.error("Error fetching course name:", error);
+      }
+    };
+    getCourseName();
+  }, [courseId, backendURL]);
+
+  useEffect(() => {
+    const getCourseKeywords = async () => {
+      
+      try {
+        const response = await axios.get(`${backendURL}/keywords/course/${courseId}` , {
+          headers: {
+            'Content-Type': 'application/json',
+            // 'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const keywords = response.data.map((element: { keyword: String; }) => element.keyword);
+        setCourseKeywords(keywords);
+        console.log("Course Keywords:", courseKeywords)
+      }
+      catch (error) {
+        console.error("Error fetching course keywords:", error);
+      }
+    }
+    getCourseKeywords();
+  },[courseId, backendURL]);
+
 
   const handleSortChange = () => {
     if(sortOrder === "") {
@@ -83,9 +132,9 @@ const CourseContent = () => {
     }
   };
 
-  const { popularityLabel, popularityIcon } = getPopularityButtonContent();
-  const { likeLabel, likeIcon} = getLikeButtonContent();
-  const { viewCountLabel, viewCountIcon } = getViewCountButtonContent();
+  // const { popularityLabel, popularityIcon } = getPopularityButtonContent();
+  // const { likeLabel, likeIcon} = getLikeButtonContent();
+  // const { viewCountLabel, viewCountIcon } = getViewCountButtonContent();
 
 
   return (
@@ -93,11 +142,11 @@ const CourseContent = () => {
         <main className="flex justify-start md:justify-between items-start md:items-center flex-col md:flex-row gap-4 flex-wrap">
             <main className="flex flex-col gap-1">
                 <span className="text-3xl font-semibold tracking-tight text-foreground" 
-                      style={{ fontFamily: "Poppins", fontSize: "60px" }}>
-                    Course Name
+                      style={{ fontFamily: "Poppins", fontSize: "40px",marginLeft: "1rem" }}>
+                    {courseName.toUpperCase()}
                 </span>
             </main>
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+          {/* <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
             <div id="popularity-sort">
               <button 
                 onClick={handleSortChange}
@@ -125,9 +174,9 @@ const CourseContent = () => {
                 {likeIcon}
               </button>
             </div>
-          </div>
+          </div> */}
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginLeft: "1rem", marginTop: "1rem" }}>
-            <button style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", backgroundColor: "rgb(9, 175, 103)", borderRadius: "15px", border: "none", cursor: "default" , margin: '5px', fontSize: "14px"}} disabled>
+            {/* <button style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", backgroundColor: "rgb(9, 175, 103)", borderRadius: "15px", border: "none", cursor: "default" , margin: '5px', fontSize: "14px"}} disabled>
               content1
             </button>
             <button style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", backgroundColor: "rgb(9, 175, 103)", borderRadius: "15px", border: "none", cursor: "default", fontSize: "14px" , margin: '5px'}} disabled>
@@ -138,12 +187,32 @@ const CourseContent = () => {
             </button>
             <button style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", backgroundColor: "rgb(9, 175, 103)", borderRadius: "15px", border: "none", cursor: "default" , margin: '5px', fontSize: "14px"}} disabled>
               content1
-            </button>
+            </button> */}
+            {courseKeywords.map((keyword, index) => (
+              <button 
+                key={index} 
+                style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "0.5rem", 
+                  padding: "0.5rem 1rem", 
+                  backgroundColor: "rgb(9, 175, 103)", 
+                  borderRadius: "1rem", 
+                  border: "none", 
+                  cursor: "default",
+                  margin: '5px',
+                  fontSize: "14px"
+                }} 
+                disabled
+              >
+                {keyword}
+              </button>
+            ))}
           </div>
 
         </main>
         <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-          <Content />
+          <Content courseId={courseId ?? ""} />
         </div>
         <div>
           <Quizes />
@@ -159,3 +228,7 @@ const CourseContent = () => {
 }
 
 export default CourseContent;
+
+function async() {
+  throw new Error("Function not implemented.");
+}

@@ -1,33 +1,131 @@
-import { useState } from "react"; // Import useState
-import { useForm, FormProvider } from "react-hook-form"; // Import FormProvider
+// import { useState } from "react"; // Import useState
+// import { useForm, FormProvider } from "react-hook-form"; // Import FormProvider
+// import { zodResolver } from "@hookform/resolvers/zod";
+// import { AppErrClient } from "@/utils/app-err";
+// import { updatePasswordRecovery } from "@/api/auth";
+// import { toast } from "@/hooks/use-toast";
+// import {
+//   CardContent,
+//   CardDescription,
+//   CardFooter,
+//   CardHeader,
+//   CardTitle,
+// } from "@/components/ui/card";
+// import {
+//   Form,
+//   FormControl,
+//   FormField,
+//   FormItem,
+//   FormLabel,
+//   FormMessage,
+// } from "@/components/ui/form";
+// import { Input } from "@/components/ui/input";
+// import { Button } from "@/components/ui/button";
+// import { Loader } from "lucide-react";
+// import { Link, useNavigate } from "react-router-dom";
+// import { updatePasswordRecoverytypes } from "@/types/auth-types";
+// import { updatePasswordRecoverySchema } from "@/schemas/auth-schemas";
+// import { motion } from "framer-motion";
+
+// const ResetPassword = () => {
+//   const form = useForm<updatePasswordRecoverytypes>({
+//     resolver: zodResolver(updatePasswordRecoverySchema),
+//     defaultValues: {
+//       password: "",
+//       confirmpassword: "",
+//     },
+//   });
+
+//   const [otpVerified, setOtpVerified] = useState(false); // Track OTP verification status
+//   const [otp, setOtp] = useState(""); // Store OTP input
+//   const {
+//     handleSubmit,
+//     control,
+//     formState: { isSubmitting },
+//   } = form;
+
+//   const navigate = useNavigate();
+
+//   const urlParams = new URLSearchParams(window.location.search);
+//   const secret = urlParams.get("secret");
+//   const userId = urlParams.get("userId");
+
+//   const onOtpSubmit = (otp: string) => {
+//     // Validate OTP here (e.g., call an API to verify OTP)
+//     if (otp === "123456") {
+//       // For example, assume OTP verification success
+//       setOtpVerified(true);
+//     } else {
+//       toast({
+//         title: "Invalid OTP",
+//         description: "The OTP you entered is incorrect.",
+//         variant: "destructive",
+//       });
+//     }
+//   };
+
+//   const onSubmit = async (values: updatePasswordRecoverytypes) => {
+//     try {
+//       if (!userId || !secret) {
+//         throw new Error("Required recovery information missing.");
+//       }
+
+//       const payload = {
+//         userId,
+//         secret,
+//         password: values.password,
+//         confirmpassword: values.confirmpassword,
+//       };
+
+//       const response = await updatePasswordRecovery(payload);
+
+//       if (response?.$id) {
+//         toast({
+//           title: "Success",
+//           description: "Your password has been reset successfully!",
+//         });
+//         navigate("/sign-in");
+//       }
+//     } catch (error) {
+//       AppErrClient(error);
+//     }
+//   };
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AppErrClient } from "@/utils/app-err";
-import { updatePasswordRecovery } from "@/api/auth";
 import { toast } from "@/hooks/use-toast";
-import {
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { AppErrClient } from "@/utils/app-err";
+import { resetPassword } from "@/api/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { updatePasswordRecoverytypes } from "@/types/auth-types";
+import { useNavigate } from "react-router-dom";
 import { updatePasswordRecoverySchema } from "@/schemas/auth-schemas";
+import type { updatePasswordRecoverytypes } from "@/types/auth-types";
+import {  FormProvider } from "react-hook-form";
+import {
+   CardContent,
+   CardDescription,
+   CardFooter,
+   CardHeader,
+   CardTitle,
+ } from "@/components/ui/card";
 import { motion } from "framer-motion";
+import {
+   Form,
+   FormControl,
+   FormField,
+   FormItem,
+   FormLabel,
+   FormMessage,
+ } from "@/components/ui/form";
 
 const ResetPassword = () => {
+  const navigate = useNavigate();
+  const [otp, setOtp] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [loadingOtp, setLoadingOtp] = useState(false);
+
   const form = useForm<updatePasswordRecoverytypes>({
     resolver: zodResolver(updatePasswordRecoverySchema),
     defaultValues: {
@@ -36,61 +134,112 @@ const ResetPassword = () => {
     },
   });
 
-  const [otpVerified, setOtpVerified] = useState(false); // Track OTP verification status
-  const [otp, setOtp] = useState(""); // Store OTP input
-  const {
-    handleSubmit,
-    control,
-    formState: { isSubmitting },
-  } = form;
+  // 🔐 Get mobile and confirmationResult from localStorage
+  const [mobile, setMobile] = useState<string | null>(null);
+  const [confirmationResult, setConfirmationResult] = useState<any>(null);
 
-  const navigate = useNavigate();
+  // useEffect(() => {
+  //   const storedMobile = localStorage.getItem("resetMobile");
+  //   const storedConfirmation = localStorage.getItem("resetConfirmationResult");
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const secret = urlParams.get("secret");
-  const userId = urlParams.get("userId");
+  //   if (!storedMobile || !storedConfirmation) {
+  //     toast({
+  //       title: "Missing Info",
+  //       description: "No mobile/OTP session found. Please try again.",
+  //       variant: "destructive",
+  //     });
+  //     navigate("/send-mobile");
+  //   } else {
+  //     setMobile(storedMobile);
+  //     setConfirmationResult(JSON.parse(storedConfirmation));
+  //   }
+  // }, []);
 
-  const onOtpSubmit = (otp: string) => {
-    // Validate OTP here (e.g., call an API to verify OTP)
-    if (otp === "123456") {
-      // For example, assume OTP verification success
-      setOtpVerified(true);
-    } else {
-      toast({
-        title: "Invalid OTP",
-        description: "The OTP you entered is incorrect.",
-        variant: "destructive",
-      });
+  // const handleVerifyOtp = async () => {
+  //   try {
+  //     if (!confirmationResult) {
+  //       throw new Error("No OTP session. Please resend OTP.");
+  //     }
+
+  //     setLoadingOtp(true);
+  //     const result = await confirmationResult.confirm(otp);
+  //     console.log("✅ OTP Verified:", result.user);
+
+  //     setOtpVerified(true);
+  //     toast({ title: "Success", description: "OTP verified." });
+  //   } catch (error) {
+  //     console.error("❌ OTP Verification failed:", error);
+  //     toast({
+  //       title: "Invalid OTP",
+  //       description: "The OTP entered is incorrect or expired.",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setLoadingOtp(false);
+  //   }
+  // };
+useEffect(() => {
+  const storedMobile = localStorage.getItem("resetMobile");
+  const storedConfirmation = (window as any).confirmationResult;
+
+  if (!storedMobile || !storedConfirmation) {
+    toast({
+      title: "Missing Info",
+      description: "No mobile/OTP session found. Please try again.",
+      variant: "destructive",
+    });
+    navigate("/send-mobile");
+  } else {
+    setMobile(storedMobile);
+    setConfirmationResult(storedConfirmation); // no need to JSON.parse
+  }
+}, []);
+
+  const handleVerifyOtp = async () => {
+  try {
+    const confirmationResult = (window as any).confirmationResult; // ✅ fetch from global window
+
+    if (!confirmationResult) {
+      throw new Error("No OTP session. Please resend OTP.");
     }
-  };
+
+    setLoadingOtp(true);
+
+    const result = await confirmationResult.confirm(otp); // ✅ actual Firebase OTP verification
+    console.log("✅ OTP Verified:", result.user);
+
+    setOtpVerified(true);
+    toast({ title: "Success", description: "OTP verified." });
+  } catch (error) {
+    console.error("❌ OTP Verification failed:", error);
+    toast({
+      title: "Invalid OTP",
+      description: "The OTP entered is incorrect or expired.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoadingOtp(false);
+  }
+};
 
   const onSubmit = async (values: updatePasswordRecoverytypes) => {
     try {
-      if (!userId || !secret) {
-        throw new Error("Required recovery information missing.");
-      }
+      if (!mobile) throw new Error("Mobile number not found");
 
-      const payload = {
-        userId,
-        secret,
-        password: values.password,
-        confirmpassword: values.confirmpassword,
-      };
+      await resetPassword(mobile, values.password);
 
-      const response = await updatePasswordRecovery(payload);
+      toast({
+        title: "Success",
+        description: "Password reset successfully!",
+      });
 
-      if (response?.$id) {
-        toast({
-          title: "Success",
-          description: "Your password has been reset successfully!",
-        });
-        navigate("/sign-in");
-      }
+      localStorage.removeItem("resetMobile");
+      localStorage.removeItem("resetConfirmationResult");
+      navigate("/sign-in");
     } catch (error) {
       AppErrClient(error);
     }
   };
-
   return (
     <div className="h-[calc(100vh-64px)] w-full flex bg-gradient-to-br from-black via-gray-900 to-green-900 relative overflow-hidden">
       {/* Background Dots */}
@@ -186,7 +335,7 @@ const ResetPassword = () => {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    onOtpSubmit(otp);
+                    handleVerifyOtp();
                   }}
                   className="space-y-5"
                 >
@@ -215,6 +364,7 @@ const ResetPassword = () => {
                       <Button
                         type="submit"
                         className="w-full bg-green-600 hover:bg-green-700"
+                         disabled={loadingOtp}
                       >
                         Verify OTP
                       </Button>
@@ -224,9 +374,9 @@ const ResetPassword = () => {
               </FormProvider>
             ) : (
               <Form {...form}>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                   <FormField
-                    control={control}
+                    control={form.control}
                     name="password"
                     render={({ field }) => (
                       <FormItem>
@@ -246,7 +396,7 @@ const ResetPassword = () => {
                     )}
                   />
                   <FormField
-                    control={control}
+                    control={form.control}
                     name="confirmpassword"
                     render={({ field }) => (
                       <FormItem>
@@ -301,3 +451,293 @@ const ResetPassword = () => {
 };
 
 export default ResetPassword;
+// import { useEffect, useState } from "react";
+// import { useForm } from "react-hook-form";
+// import { zodResolver } from "@hookform/resolvers/zod";
+// import { toast } from "@/hooks/use-toast";
+// import { AppErrClient } from "@/utils/app-err";
+// import { resetPassword } from "@/api/auth";
+// import { Input } from "@/components/ui/input";
+// import { Button } from "@/components/ui/button";
+// import { Loader } from "lucide-react";
+// import { useNavigate } from "react-router-dom";
+// import { updatePasswordRecoverySchema } from "@/schemas/auth-schemas";
+// import type { updatePasswordRecoverytypes } from "@/types/auth-types";
+
+// const ResetPassword = () => {
+//   const navigate = useNavigate();
+//   const [otp, setOtp] = useState("");
+//   const [otpVerified, setOtpVerified] = useState(false);
+//   const [loadingOtp, setLoadingOtp] = useState(false);
+
+//   const form = useForm<updatePasswordRecoverytypes>({
+//     resolver: zodResolver(updatePasswordRecoverySchema),
+//     defaultValues: {
+//       password: "",
+//       confirmpassword: "",
+//     },
+//   });
+
+//   // 🔐 Get mobile and confirmationResult from localStorage
+//   const [mobile, setMobile] = useState<string | null>(null);
+//   const [confirmationResult, setConfirmationResult] = useState<any>(null);
+
+//   useEffect(() => {
+//     const storedMobile = localStorage.getItem("resetMobile");
+//     const storedConfirmation = localStorage.getItem("resetConfirmationResult");
+
+//     if (!storedMobile || !storedConfirmation) {
+//       toast({
+//         title: "Missing Info",
+//         description: "No mobile/OTP session found. Please try again.",
+//         variant: "destructive",
+//       });
+//       navigate("/forgot-password");
+//     } else {
+//       setMobile(storedMobile);
+//       setConfirmationResult(JSON.parse(storedConfirmation));
+//     }
+//   }, []);
+
+//   // const handleVerifyOtp = async () => {
+//   //   try {
+//   //     if (!confirmationResult) {
+//   //       throw new Error("No OTP session. Please resend OTP.");
+//   //     }
+
+//   //     setLoadingOtp(true);
+//   //     const result = await confirmationResult.confirm(otp);
+//   //     console.log("✅ OTP Verified:", result.user);
+
+//   //     setOtpVerified(true);
+//   //     toast({ title: "Success", description: "OTP verified." });
+//   //   } catch (error) {
+//   //     console.error("❌ OTP Verification failed:", error);
+//   //     toast({
+//   //       title: "Invalid OTP",
+//   //       description: "The OTP entered is incorrect or expired.",
+//   //       variant: "destructive",
+//   //     });
+//   //   } finally {
+//   //     setLoadingOtp(false);
+//   //   }
+//   // };
+// const handleVerifyOtp = async () => {
+//   try {
+//     const confirmationResult = (window as any).confirmationResult; // ✅ fetch from global window
+
+//     if (!confirmationResult) {
+//       throw new Error("No OTP session. Please resend OTP.");
+//     }
+
+//     setLoadingOtp(true);
+
+//     const result = await confirmationResult.confirm(otp); // ✅ actual Firebase OTP verification
+//     console.log("✅ OTP Verified:", result.user);
+
+//     setOtpVerified(true);
+//     toast({ title: "Success", description: "OTP verified." });
+//   } catch (error) {
+//     console.error("❌ OTP Verification failed:", error);
+//     toast({
+//       title: "Invalid OTP",
+//       description: "The OTP entered is incorrect or expired.",
+//       variant: "destructive",
+//     });
+//   } finally {
+//     setLoadingOtp(false);
+//   }
+// };
+
+//   const onSubmit = async (values: updatePasswordRecoverytypes) => {
+//     try {
+//       if (!mobile) throw new Error("Mobile number not found");
+
+//       await resetPassword(mobile, values.password);
+
+//       toast({
+//         title: "Success",
+//         description: "Password reset successfully!",
+//       });
+
+//       localStorage.removeItem("resetMobile");
+//       localStorage.removeItem("resetConfirmationResult");
+//       navigate("/sign-in");
+//     } catch (error) {
+//       AppErrClient(error);
+//     }
+//   };
+
+//   return (
+//     <div className="min-h-screen flex items-center justify-center bg-black text-white">
+//       <div className="w-full max-w-md bg-zinc-900 p-6 rounded-lg shadow-md">
+//         {!otpVerified ? (
+//           <>
+//             <h2 className="text-2xl font-bold mb-4">Verify OTP</h2>
+//             <Input
+//               type="text"
+//               placeholder="Enter OTP"
+//               value={otp}
+//               onChange={(e) => setOtp(e.target.value)}
+//               className="mb-4"
+//             />
+//             <Button onClick={handleVerifyOtp} disabled={loadingOtp} className="w-full">
+//               {loadingOtp ? (
+//                 <>
+//                   <Loader className="mr-2 w-4 h-4 animate-spin" />
+//                   Verifying...
+//                 </>
+//               ) : (
+//                 "Verify OTP"
+//               )}
+//             </Button>
+//           </>
+//         ) : (
+//           <>
+//             <h2 className="text-2xl font-bold mb-4">Reset Password</h2>
+//             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+//               <Input
+//                 type="password"
+//                 placeholder="New Password"
+//                 {...form.register("password")}
+//               />
+//               <Input
+//                 type="password"
+//                 placeholder="Confirm Password"
+//                 {...form.register("confirmpassword")}
+//               />
+//               <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+//                 {form.formState.isSubmitting ? (
+//                   <>
+//                     <Loader className="mr-2 w-4 h-4 animate-spin" />
+//                     Resetting...
+//                   </>
+//                 ) : (
+//                   "Reset Password"
+//                 )}
+//               </Button>
+//             </form>
+//           </>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default ResetPassword;
+// import { useEffect, useState } from "react";
+// import { useForm } from "react-hook-form";
+// import { zodResolver } from "@hookform/resolvers/zod";
+// import { toast } from "@/hooks/use-toast";
+// import { AppErrClient } from "@/utils/app-err";
+// import { resetPassword } from "@/api/auth";
+// import { Input } from "@/components/ui/input";
+// import { Button } from "@/components/ui/button";
+// import { Loader } from "lucide-react";
+// import { useNavigate } from "react-router-dom";
+// import { updatePasswordRecoverySchema } from "@/schemas/auth-schemas";
+// import type { updatePasswordRecoverytypes } from "@/types/auth-types";
+
+// const ResetPassword = () => {
+//   const navigate = useNavigate();
+//   const [otp, setOtp] = useState("");
+//   const [otpVerified, setOtpVerified] = useState(false);
+//   const [loadingOtp, setLoadingOtp] = useState(false);
+
+//   const form = useForm<updatePasswordRecoverytypes>({
+//     resolver: zodResolver(updatePasswordRecoverySchema),
+//     defaultValues: {
+//       password: "",
+//       confirmpassword: "",
+//     },
+//   });
+
+//   // 🔐 Get mobile and confirmationResult from localStorage
+//   const [mobile, setMobile] = useState<string | null>(null);
+//   const [confirmationResult, setConfirmationResult] = useState<any>(null);
+
+//   useEffect(() => {
+//     const storedMobile = localStorage.getItem("resetMobile");
+//     const storedConfirmation = localStorage.getItem("resetConfirmationResult");
+
+//     if (!storedMobile || !storedConfirmation) {
+//       toast({
+//         title: "Missing Info",
+//         description: "No mobile/OTP session found. Please try again.",
+//         variant: "destructive",
+//       });
+//       navigate("/forgot-password");
+//     } else {
+//       setMobile(storedMobile);
+//       setConfirmationResult(JSON.parse(storedConfirmation));
+//     }
+//   }, []);
+
+//   // const handleVerifyOtp = async () => {
+//   //   try {
+//   //     if (!confirmationResult) {
+//   //       throw new Error("No OTP session. Please resend OTP.");
+//   //     }
+
+//   //     setLoadingOtp(true);
+//   //     const result = await confirmationResult.confirm(otp);
+//   //     console.log("✅ OTP Verified:", result.user);
+
+//   //     setOtpVerified(true);
+//   //     toast({ title: "Success", description: "OTP verified." });
+//   //   } catch (error) {
+//   //     console.error("❌ OTP Verification failed:", error);
+//   //     toast({
+//   //       title: "Invalid OTP",
+//   //       description: "The OTP entered is incorrect or expired.",
+//   //       variant: "destructive",
+//   //     });
+//   //   } finally {
+//   //     setLoadingOtp(false);
+//   //   }
+//   // };
+// const handleVerifyOtp = async () => {
+//   try {
+//     const confirmationResult = (window as any).confirmationResult; // ✅ fetch from global window
+
+//     if (!confirmationResult) {
+//       throw new Error("No OTP session. Please resend OTP.");
+//     }
+
+//     setLoadingOtp(true);
+
+//     const result = await confirmationResult.confirm(otp); // ✅ actual Firebase OTP verification
+//     console.log("✅ OTP Verified:", result.user);
+
+//     setOtpVerified(true);
+//     toast({ title: "Success", description: "OTP verified." });
+//   } catch (error) {
+//     console.error("❌ OTP Verification failed:", error);
+//     toast({
+//       title: "Invalid OTP",
+//       description: "The OTP entered is incorrect or expired.",
+//       variant: "destructive",
+//     });
+//   } finally {
+//     setLoadingOtp(false);
+//   }
+// };
+
+//   const onSubmit = async (values: updatePasswordRecoverytypes) => {
+//     try {
+//       if (!mobile) throw new Error("Mobile number not found");
+
+//       await resetPassword(mobile, values.password);
+
+//       toast({
+//         title: "Success",
+//         description: "Password reset successfully!",
+//       });
+
+//       localStorage.removeItem("resetMobile");
+//       localStorage.removeItem("resetConfirmationResult");
+//       navigate("/sign-in");
+//     } catch (error) {
+//       AppErrClient(error);
+//     }
+//   };
