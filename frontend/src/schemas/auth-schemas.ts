@@ -1,17 +1,27 @@
 import { z } from "zod";
 
+
 export const CreateUserSchema = z.object({
-  // First Name: Should be a string with a max length of 50 characters
-  firstname: z.string().max(50, {
-    message: "First name is too large, maximum length is 50 characters.",
-  }),
+  firstname: z
+    .string()
+    .max(50, {
+      message: "First name is too large, maximum is 50 characters.",
+    })
+    .regex(/^[a-zA-Z\s]+$/, {
+      message: "First name must only contain letters and spaces.",
+    }),
 
-  // Last Name: Should be a string with a max length of 50 characters
-  lastname: z.string().max(50, {
-    message: "Last name is too large, maximum length is 50 characters.",
-  }),
+  lastname: z
+    .string()
+    .max(50, {
+      message: "Last name is too large, maximum is 50 characters.",
+    })
+    .regex(/^[a-zA-Z\s]+$/, {
+      message: "Last name must only contain letters and spaces.",
+    }),
 
-  // Mobile Number: Should be a string with a valid format and length (e.g., 10 digits)
+
+    
   mobile: z
     .string()
     .length(10, {
@@ -21,36 +31,40 @@ export const CreateUserSchema = z.object({
       message: "Mobile number must contain only digits.",
     }),
 
-  
-
-  // Password: Should be a string with a minimum length of 6 and a maximum of 80 characters
   password: z
     .string()
-    .min(6, {
-      message:
-        "Password is too short, it should be at least 6 characters long.",
+    .min(8, {
+      message: "Password must be at least 8 characters long.",
     })
     .max(80, {
-      message:
-        "Password exceeded the limit, it should be less than 80 characters.",
+      message: "Password must be less than 80 characters.",
+    })
+    .regex(/[A-Z]/, {
+      message: "Password must contain at least one uppercase letter.",
+    })
+    .regex(/[a-z]/, {
+      message: "Password must contain at least one lowercase letter.",
+    })
+    .regex(/[0-9]/, {
+      message: "Password must contain at least one digit.",
+    })
+    .regex(/[^a-zA-Z0-9]/, {
+      message: "Password must contain at least one special character.",
     }),
 });
 
 export const LoginUserSchema = z.object({
   mobile: z
     .string()
-    .min(10, { message: "Mobile number must be 10 digits" })
-    .max(10, { message: "Mobile number must be 10 digits" })
-    .regex(/^\d{10}$/, { message: "Invalid mobile number" }),
+    .length(10, { message: "Mobile number must be exactly 10 digits." })
+    .regex(/^\d{10}$/, { message: "Mobile number must contain only digits." }),
+
   password: z
     .string()
-    .min(6, {
-      message: "Password is too short",
-    })
-    .max(80, {
-      message: "Exceeded the limits, try shorter",
-    }),
+    .min(6, { message: "Password is too short." })
+    .max(80, { message: "Password is too long." }),
 });
+
 
 
 export const VerifyUserSchema = z.object({
