@@ -37,6 +37,10 @@ app.get('/api', (req, res) => {
   res.json({ message: 'API is working!' });
 });
 
+// Sync models with the database
+sequelize.sync({alter: true}) // Set to true only for development alter: true force: false
+  .then(() => console.log('Database schema synced'))
+  .catch(err => console.error('Database sync error:', err));
 // ✅ Handle 404s
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });

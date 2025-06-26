@@ -1,4 +1,5 @@
-const Studyplan = require('../models/Studyplan');
+const db = require('../models');
+const Studyplan = db.StudyPlan; // Assuming Studyplan is defined in your models
 
 exports.getAllPlans = async (req, res) => {
   const plans = await Studyplan.findAll();

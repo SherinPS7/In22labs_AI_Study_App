@@ -1,6 +1,9 @@
 const { User } = require('../models'); // ✅ Fix if you're using module.exports
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+const { z } = require("zod");
+const { createUserSchema } = require("../validators/authSchema");
+const { LoginUserSchema } = require("../validators/authSchema");
 
 // ✅ New Controller: Check if mobile number exists
 exports.checkMobile = async (req, res) => {
@@ -22,11 +25,20 @@ exports.checkMobile = async (req, res) => {
 
 // ✅ Final Signup (after OTP is verified on frontend)
 exports.signup = async (req, res) => {
-  const { firstname, lastname, mobile, password } = req.body;
+  try {
+    // ✅ Validate incoming body
+    const result = createUserSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: result.error.flatten().fieldErrors,
+      });
+    }
+  const { firstname, lastname, mobile, password } = result.data;
    //console.log("Backend received:", req.body);  // <-- add this line
 
 
-  try {
+  
     // Optional: You may recheck if user already exists (safety)
     const existingUser = await User.findOne({ where: { mobile } });
     if (existingUser) {
