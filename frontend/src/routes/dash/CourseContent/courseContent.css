@@ -11,17 +11,137 @@ body {
   color: #fff;
 }
 
-/* Content Container */
 .content-container {
-  padding: 2rem;
+  padding: 1rem;
+  width: 100%;
 }
+
+.video-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.video-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.video-thumbnail {
+  width: 240px;
+  height: 135px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.video-info-box {
+  background-color: #1c1c1e;
+  padding: 1rem;
+  border-radius: 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 135px;
+}
+
+.video-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.video-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.4rem;
+}
+
+.video-meta,
+.video-channel {
+  font-size: 14px;
+  color: #bbb;
+  margin-top: 2px;
+}
+
+
+.video-checkbox {
+  margin-left: 1rem;
+  width: 25px;
+  height: 25px;
+  accent-color: #09af67;
+  cursor: pointer;
+}
+
+
+.thumbnail-wrapper {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.thumbnail-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-duration {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background-color: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 2px 6px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.video-info-wrapper {
+  display: flex;
+  margin-top: 0.6rem;
+}
+
+.profile-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  margin-right: 0.75rem;
+}
+
+.video-text-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.video-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.video-channel {
+  font-size: 14px;
+  color: #aaa;
+}
+
 
 /* Header */
 .content-header {
   font-size: 32px;
   font-weight: bold;
   margin-bottom: 2rem;
-  margin-left: -1rem;
+  margin-left: 0.5rem;
 }
 
 /* Body */
@@ -71,11 +191,6 @@ body {
 .video-details {
   display: flex;
   flex-direction: column;
-}
-
-.video-title {
-  font-size: 24px;
-  font-weight: bold;
 }
 
 .video-info {

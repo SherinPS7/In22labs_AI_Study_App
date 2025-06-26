@@ -46,7 +46,7 @@ sequelize.authenticate()
   .catch(err => console.error('Database connection error:', err));
 
 // Sync models with the database
-sequelize.sync({force: false}) // Set to true only for development
+sequelize.sync({alter: true}) // Set to true only for development alter: true force: false
   .then(() => console.log('Database schema synced'))
   .catch(err => console.error('Database sync error:', err));
 
