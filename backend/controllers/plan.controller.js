@@ -1,10 +1,26 @@
-const Studyplan = require('../models/Studyplan');
+const { StudyPlan } = require('../models'); // ✅ Correct model import
 
 exports.getAllPlans = async (req, res) => {
-  const plans = await Studyplan.findAll();
-  res.json(plans);
+  try {
+    const userId = req.session?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: User not logged in' });
+    }
+
+    const plans = await StudyPlan.findAll({
+      where: { user_id_foreign_key: userId },
+    });
+
+    res.status(200).json(plans);
+  } catch (err) {
+    console.error('Error fetching plans:', err);
+    res.status(500).json({ error: 'Failed to fetch plans' });
+  }
 };
 
+
+ 
 exports.getPlanById = async (req, res) => {
   const plan = await Studyplan.findByPk(req.params.id);
   if (!plan) return res.status(404).json({ error: 'Plan not found' });

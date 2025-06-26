@@ -10,8 +10,7 @@ router.use('/integrations', require('./integrations.routes'));
 
 router.use('/features', require('./userFeatures.routes'));
 router.use('/gamification', require('./gamification.routes'));  
-
-// Add this line for session routes:
+router.use('/recommendations', require('./recc.routes'));// Add this line for session routes:
 router.use('/session', require('./session.routes'));  
-
+router.use('/notion', require('./notion.routes')); // Add this line for Notion routes
 module.exports = router;

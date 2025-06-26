@@ -4,12 +4,7 @@ module.exports = (sequelize, DataTypes) => {
     first_name: DataTypes.STRING(50),
     last_name: DataTypes.STRING(50),
     mobile: DataTypes.STRING(10),
-    email: {
-      type: DataTypes.STRING(100),
-      unique: true,
-      allowNull: false,
-      validate: { isEmail: true },
-    },
+   
     password: DataTypes.STRING(255),
     google_tokens: {
       type: DataTypes.JSONB, 
@@ -31,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.StudyPlan, { foreignKey: 'user_id_foreign_key' });
     User.hasMany(models.QuizScore, { foreignKey: 'user_id_foreign_key' });
     User.hasMany(models.AssessmentScore, { foreignKey: 'user_id_foreign_key' });
-    User.hasMany(models.UserFeatures, { foreignKey: 'user_id_foreign_key' });
+    // User.hasMany(models.UserFeatures, { foreignKey: 'user_id_foreign_key' });
     User.hasMany(models.ToDoList, { foreignKey: 'user_id_foreign_key' });
   };
 
