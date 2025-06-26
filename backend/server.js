@@ -22,7 +22,8 @@ const sequelize = require('./config/postgres');
 const app = express();
 // Enable CORS for specific origin
 app.use(cors({
-  origin: 'http://localhost:5173',  // This allows requests from your frontend URL
+  //origin: '*',  // This allows requests from your frontend URL
+  origin:'http://localhost:5173',
   credentials: true,  // If you're using cookies or authentication headers
 }));
 app.use(express.json()); 

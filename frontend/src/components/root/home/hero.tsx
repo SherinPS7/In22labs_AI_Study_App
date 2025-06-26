@@ -75,8 +75,10 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Grids from "@/assets/grid-lines.png";
 import Stars from "@/assets/stars.png";
+import { useCheckSession } from "@/hooks/use-check-session";
 
 const Hero = () => {
+  useCheckSession();
   return (
     <main className="relative overflow-hidden bg-[radial-gradient(100%_100%_at_center,hsl(142.1,76.2%,36.3%,0.4)_5%,hsl(142.1,66%,38%,0.2)_20%,transparent_100%)]">
       <div

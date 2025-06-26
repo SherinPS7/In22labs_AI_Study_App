@@ -6,36 +6,38 @@ import { useState } from 'react'
 import { AppErrClient } from '@/utils/app-err'
 import { useNavigate } from 'react-router-dom'
 import { toast } from '@/hooks/use-toast'
-import { useAuth } from '@/hooks/use-auth'
+//import { useAuth } from '@/hooks/use-auth'
 import { useDispatch } from 'react-redux'
 import { logout } from '@/features/auth-slice'
+import { LogoutUser } from '@/api/auth';
+
 
 const LogoutDialog = () => {
     const [isLoading, setLoading] = useState<boolean>(false);
     const [open, setOpen] = useState<boolean>(false);
 
     const navigate = useNavigate();
-    const {logoutMutation} = useAuth();
+  //  const {logoutMutation} = useAuth();
     const dispatch = useDispatch();
 
-    const handleLogout = async () => {
-        try {
-            setLoading(true);
-            await logoutMutation.mutateAsync();
-            dispatch(logout());
-            toast({
-                title: "Logout Success",
-                description : `you have been successfully logged out of your account`,
-                variant: "default"
-            })
-            navigate("/");        
-        } catch (error) {
-            AppErrClient(error);
-        } finally {
-            setLoading(false);
-            setOpen(false);
-        }
-    }
+   const handleLogout = async () => {
+  try {
+    setLoading(true);
+    await LogoutUser(); // 🔥 Calls backend
+    dispatch(logout()); // 🔥 Clears Redux
+    toast({
+      title: "Logout Success",
+      description: "You have been successfully logged out of your account",
+      variant: "default",
+    });
+    navigate("/");
+  } catch (error) {
+    AppErrClient(error);
+  } finally {
+    setLoading(false);
+    setOpen(false);
+  }
+};
   return (
     <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger>
@@ -77,4 +79,4 @@ const LogoutDialog = () => {
   )
 }
 
-export default LogoutDialog
+export default LogoutDialog;
