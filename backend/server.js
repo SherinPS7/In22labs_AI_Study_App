@@ -1,68 +1,74 @@
-require('dotenv').config(); // Load environment variables
+require('dotenv').config(); 
 const express = require('express');
 const cors = require('cors');
-//const session = require('express-session');
-//const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const { sessionMiddleware, initSessionStore } = require('./config/session');
-
-
-const routes = require('./routes/index.routes');  // Correct path to your index routes
-//const streakRoutes = require('./routes/streak');  // Import your streak routes
-
-// Ensure all necessary env variables are set
-if (!process.env.DB_NAME || !process.env.DB_PASSWORD ) {
-  console.error('Missing essential environment variables. Check .env file.');
-  process.exit(1);
-}
-
-// Initialize Firebase Admin (from config/)
+const routes = require('./routes/index.routes');
 const sequelize = require('./config/postgres');
+// Fix: Use require instead of import
+const todoRoutes = require('./routes/todolist.routes');
 
-// Create Express app
 const app = express();
-// Enable CORS for specific origin
+
+// ✅ Enable CORS for frontend (5173) and allow credentials
 app.use(cors({
-  //origin: '*',  // This allows requests from your frontend URL
-  origin:'http://localhost:5173',
-  credentials: true,  // If you're using cookies or authentication headers
+  origin: 'http://localhost:5173',
+  credentials: true,
 }));
-app.use(express.json()); 
 
-app.use(sessionMiddleware);
-
-initSessionStore();
-
-app.use('/api', routes);
-
-
-
-
-// Built-in JSON parser
+// ✅ Parse JSON
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection
-sequelize.authenticate()
-  .then(() => console.log('Database connected successfully'))
-  .catch(err => console.error('Database connection error:', err));
+// ✅ Session Middleware
+app.use(sessionMiddleware);
+initSessionStore();
 
-// Sync models with the database
-sequelize.sync({force: false}) // Set to true only for development
-  .then(() => console.log('Database schema synced'))
-  .catch(err => console.error('Database sync error:', err));
+// ✅ Mount routes under /api
+app.use('/api', routes);
+// Add todo routes specifically
+app.use('/api/todos', todoRoutes);
 
-// Error handling middleware
+// ✅ Health check (optional)
+app.get('/', (req, res) => {
+  res.send('Backend is running!');
+});
+
+app.get('/api', (req, res) => {
+  res.json({ message: 'API is working!' });
+});
+
+// ✅ Handle 404s
+app.use((req, res) => {
+  res.status(404).json({ error: 'Endpoint not found' });
+});
+
+// ✅ Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
+// ✅ Start server and connect DB
+const startServer = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('✅ Database connected');
+    
+    await sequelize.sync({ force: false });
+    console.log('✅ Database synced');
+    
+    const PORT = process.env.PORT || 4000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Listening on port ${PORT}`);
+      console.log('📋 Available todo routes:');
+      console.log('  GET    /api/todos');
+      console.log('  POST   /api/todos');
+      console.log('  PUT    /api/todos/:id');
+      console.log('  DELETE /api/todos/:id');
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+  }
+};
 
-// 404 Handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
-});
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}`);
-});
+startServer();

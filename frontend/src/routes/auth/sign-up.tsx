@@ -71,7 +71,7 @@ const SignUp = () => {
 
     try {
       // Step 1: Check if mobile exists in backend
-      const res = await axios.post("http://localhost:5000/api/auth/check-mobile", { mobile });
+      const res = await axios.post("http://localhost:4000/api/auth/check-mobile", { mobile });
       if (res.data?.status === "exists") {
         toast({
           title: "Mobile Exists",
