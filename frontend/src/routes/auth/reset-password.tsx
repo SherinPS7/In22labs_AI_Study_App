@@ -181,14 +181,15 @@ const ResetPassword = () => {
 useEffect(() => {
   const storedMobile = localStorage.getItem("resetMobile");
   const storedConfirmation = (window as any).confirmationResult;
-
+    console.log("📱 Stored mobile:", storedMobile);
+  console.log("🧾 Stored confirmationResult:", storedConfirmation);
   if (!storedMobile || !storedConfirmation) {
     toast({
       title: "Missing Info",
       description: "No mobile/OTP session found. Please try again.",
       variant: "destructive",
     });
-    navigate("/send-mobile");
+    navigate("/reset-password");
   } else {
     setMobile(storedMobile);
     setConfirmationResult(storedConfirmation); // no need to JSON.parse

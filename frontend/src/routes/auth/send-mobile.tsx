@@ -119,7 +119,7 @@ const onSubmit = async (values: sendMobileTypes) => {
     const phoneNumber = `+91${values.mobile}`;
 
     // ✅ Step 2: Store mobile in localStorage (needed later for password reset)
-    //localStorage.setItem("resetMobile", values.mobile);
+    localStorage.setItem("resetMobile", values.mobile);
 
     // ✅ Step 3: Setup invisible Firebase reCAPTCHA
     setupRecaptcha("recaptcha-container");
