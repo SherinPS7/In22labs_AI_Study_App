@@ -155,10 +155,10 @@ const keywordIds = courseKeywords.map((keywordObj: any) => keywordObj.id);
                 }}
                 disabled
               >
-                {keyword}
+                {keyword.keyword}
               </button>
             ))}
-          </div> */}
+          </div> 
           <div
             className="keyword-container"
             style={{
@@ -169,7 +169,7 @@ const keywordIds = courseKeywords.map((keywordObj: any) => keywordObj.id);
               marginTop: "1rem",
             }}
           >
-            {courseKeywords.map((keyword, index) => (
+            {courseKeywords.map((keywordObj, index) => (
               <button
                 className="keyword-button"
                 key={index}
