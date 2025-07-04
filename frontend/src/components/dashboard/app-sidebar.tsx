@@ -73,11 +73,6 @@ const billing = [
 
 const community = [
   {
-    title : "Course",
-    url : "/course/21",
-    icon : Users
-  },
-  {
     title : "My Learnings",
     url : "/mylearnings",
     icon : Notebook
@@ -131,7 +126,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Community</SidebarGroupLabel>
+          <SidebarGroupLabel>COURSES</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {community.map((item) => (

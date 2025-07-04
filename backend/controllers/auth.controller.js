@@ -84,6 +84,7 @@ exports.login = async (req, res) => {
     }
       // Store user info in session
     req.session.userId = user.id;
+    console.log("userid added to session" + req.session.userId);
     req.session.firstname = user.first_name;
     req.session.lastname = user.last_name;
     req.session.mobile = user.mobile;

@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes) => {
     const Course = sequelize.define('Course', {
       course_name: DataTypes.STRING,
       user_id_foreign_key: DataTypes.INTEGER,
+      ref_course_id: DataTypes.INTEGER,
     });
   
     Course.associate = models => {

@@ -25,10 +25,10 @@ exports.getVideoById = async (req, res) => {
 
 exports.createVideo = async (req, res) => {
   try {
-    const { keywords, course_id } = req.body;
+    const {course_id } = req.body;
 
-    if (!keywords || !course_id) {
-      return res.status(400).json({ error: 'Missing keywords or course_id' });
+    if (!course_id) {
+      return res.status(400).json({ error: 'course_id' });
     }
 
     const topVideo = await getTopVideoByEstimatedWatchTime(keywords);
@@ -54,6 +54,27 @@ exports.createVideo = async (req, res) => {
   }
 };
 
+exports.createIndididualVideo = async (req, res) => {
+  try {
+    const { video_title, video_url, video_thumbnail, video_channel, video_duration, course_id_foreign_key } = req.body;
+    if (!video_title || !video_url || !video_thumbnail || !video_channel || !video_duration || !course_id_foreign_key) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    const newVideo = await Video.create({
+      video_title,
+      video_url,
+      video_thumbnail,
+      video_channel,
+      video_duration,
+      video_progress: false,
+      course_id_foreign_key
+    });
+    res.status(201).json(newVideo); 
+  } catch (error) {
+    console.error('Error creating individual video:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
 
 exports.updateVideo = async (req, res) => {
   try {

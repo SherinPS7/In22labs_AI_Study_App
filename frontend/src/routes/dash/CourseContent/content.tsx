@@ -135,7 +135,7 @@ const formatDuration = (durationStr: string) => {
     .join(":");
 };
 
-const Content = ({ courseId }: { courseId: string }) => {
+const Content = ({ courseId, refreshKey }: { courseId: string; refreshKey: number }) => {
   const backendURL = import.meta.env.VITE_BACKEND_URL;
   const [videoData, setVideoData] = useState<VideoItem[]>([]);
 
@@ -152,7 +152,7 @@ const Content = ({ courseId }: { courseId: string }) => {
     };
 
     fetchVideoData();
-  }, [courseId]);
+  }, [courseId, refreshKey]);
 
   const handleChangeProgress = async (videoId: number) => {
     try {
@@ -234,7 +234,7 @@ const Content = ({ courseId }: { courseId: string }) => {
                 onClick={(e) => e.stopPropagation()} 
                 title={video.video_progress ? "Watched" : "Mark as watched"}
                 onChange={() => handleChangeProgress(video.id)}
-              />
+                />
               </div>
             </div>
           </div>
