@@ -116,7 +116,7 @@ const confirmEnrollment = async () => {
 
 
   return (
-    <div className="w-full p-4" style={{marginTop: "2rem"}}>
+    <div className="w-full p-4" style={{marginTop: "1rem"}}>
         <main className="flex justify-start md:justify-between items-start md:items-center flex-col md:flex-row gap-4 flex-wrap">
            <main className="flex justify-between items-start w-full flex-wrap gap-4">
   <div className="flex flex-col gap-1">
@@ -138,7 +138,7 @@ const confirmEnrollment = async () => {
       onClick={!isEnrolled ? handleEnroll : undefined}
       disabled={isEnrolled}
       style={{
-        marginRight: "1rem",
+        marginRight: "0rem",
         marginTop: "-1rem",
         backgroundColor: isEnrolled ? "gray" : "", // change style when disabled
         cursor: isEnrolled ? "not-allowed" : "pointer",

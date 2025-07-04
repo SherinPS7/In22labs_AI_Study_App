@@ -14,6 +14,7 @@ body {
 /* ========== Containers ========== */
 .content-container {
   padding: 1rem;
+  margin: 1rem;
   width: 100%;
 }
 .course-title {
@@ -319,7 +320,7 @@ body {
 
   .content-container {
     padding: 0;
-    margin: 0;
+    margin: 1rem;
   }
 
   .video-info-box {
