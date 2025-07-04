@@ -1,3 +1,5 @@
+//require("./utils/cleanup"); // 👈 This ensures the cron job starts with your server
+
 require('dotenv').config(); // Load environment variables
 const express = require('express');
 const cors = require('cors');
@@ -8,6 +10,7 @@ const { sessionMiddleware, initSessionStore } = require('./config/session');
 
 const routes = require('./routes/index.routes');  // Correct path to your index routes
 //const streakRoutes = require('./routes/streak');  // Import your streak routes
+//app.use('/certificates', express.static('public/certificates'));
 
 // Ensure all necessary env variables are set
 if (!process.env.DB_NAME || !process.env.DB_PASSWORD ) {
@@ -20,6 +23,7 @@ const sequelize = require('./config/postgres');
 
 // Create Express app
 const app = express();
+app.use('/certificates', express.static('public/certificates'));
 // Enable CORS for specific origin
 app.use(cors({
   //origin: '*',  // This allows requests from your frontend URL
@@ -43,7 +47,9 @@ app.use(express.urlencoded({ extended: true }));
 // Database connection
 sequelize.authenticate()
   .then(() => console.log('Database connected successfully'))
+  
   .catch(err => console.error('Database connection error:', err));
+   require('./utils/cleanup');
 
 // Sync models with the database
 sequelize.sync({alter: true}) // Set to true only for development alter: true force: false

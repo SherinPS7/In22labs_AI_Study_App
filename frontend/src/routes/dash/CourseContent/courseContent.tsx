@@ -10,17 +10,25 @@ import axios from "axios";
 
 
 const CourseContent = () => {
+  
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
   const { courseId } = useParams();
+ // const userId = Number(localStorage.getItem("userId")); // 
+ const userId = 27; // ✅ Temporary static userId for testing
 
+type Keyword = {
+  id: number;
+  keyword: string;
+};
   const [courseName, setCourseName] = useState("");
-  const [courseKeywords, setCourseKeywords] = useState([]);
-
+  //const [courseKeywords, setCourseKeywords] = useState([]);
+const [courseKeywords, setCourseKeywords] = useState<Keyword[]>([]);
 
   const [sortOrder, setSortOrder] = useState("");
   const [sortViewCount, setSortViewCount] = useState("");
   const [sortLikes, setSortLikes] = useState("");
+console.log("Course ID (static):", courseId);
 
   useEffect(() => {
       const getCourseName = async () => {
@@ -52,18 +60,23 @@ const CourseContent = () => {
             // 'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
-        const keywords = response.data.map((element: { keyword: String; }) => element.keyword);
-        setCourseKeywords(keywords);
-        console.log("Course Keywords:", courseKeywords)
-      }
-      catch (error) {
-        console.error("Error fetching course keywords:", error);
+        // const keywords = response.data.map((element: { keyword: String; }) => element.keyword);
+        // setCourseKeywords(keywords);
+        setCourseKeywords(response.data); // full objects with id + keyword
+
+      //  
+      // 🔍 Extract keyword IDs
+      const keywordIds = response.data.map((k: { id: number }) => k.id);
+      console.log("Keyword IDs:", keywordIds);
+    } catch (error) {
+      console.error("Error fetching course keywords:", error);
       }
     }
     getCourseKeywords();
   },[courseId, backendURL]);
 
-
+// Convert courseKeywords into array of keyword IDs
+const keywordIds = courseKeywords.map((keywordObj: any) => keywordObj.id);
   const handleSortChange = () => {
     if(sortOrder === "") {
       setSortOrder('asc');
@@ -188,7 +201,7 @@ const CourseContent = () => {
             <button style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.5rem 1rem", backgroundColor: "rgb(9, 175, 103)", borderRadius: "15px", border: "none", cursor: "default" , margin: '5px', fontSize: "14px"}} disabled>
               content1
             </button> */}
-            {courseKeywords.map((keyword, index) => (
+            {courseKeywords.map((keywordObj, index) => (
               <button 
                 key={index} 
                 style={{ 
@@ -205,7 +218,7 @@ const CourseContent = () => {
                 }} 
                 disabled
               >
-                {keyword}
+                {keywordObj.keyword}
               </button>
             ))}
           </div>
@@ -218,7 +231,9 @@ const CourseContent = () => {
           <Quizes />
         </div>
         <div>
-          <FinalAssessment />
+          {/* <FinalAssessment /> */}
+          <FinalAssessment userId={userId} keywordIds={keywordIds} />
+
         </div>
         <div>
           <AlternativeContent />

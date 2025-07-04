@@ -17,6 +17,7 @@ db.Streak = require('./streak')(sequelize, DataTypes);
 db.StudyPlan = require('./Studyplan')(sequelize, DataTypes);
 db.UserFeatures = require('./UserFeatures')(sequelize, DataTypes);
 db.ToDoList = require('./ToDoList')(sequelize, DataTypes);
+db.QuizAttempt = require('./QuizAttempt')(sequelize, DataTypes);
 
 // Set up associations
 Object.keys(db).forEach(modelName => {

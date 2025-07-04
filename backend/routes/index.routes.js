@@ -20,5 +20,7 @@ router.use('/videos', require('./video.routes'));
 router.use('/courses', require('./course.routes'));
 
 router.use('/keywords', require('./keywords.routes'));
+router.use('/quiz', require('./quiz.routes'));
+router.use('/certificate', require('./certificate.routes'));
 
 module.exports = router;

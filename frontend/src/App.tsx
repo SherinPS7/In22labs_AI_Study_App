@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import Root from "./layouts/root"
 import Pricing from "./routes/root/pricing"
+import QuizPage from "../src/routes/dash/quiz/QuizPage"; 
 import Home from "./routes/root/home"
 import Auth from "./layouts/auth"
 import SignIn from "./routes/auth/sign-in"
@@ -69,6 +70,7 @@ function App() {
             <Route path="/learn/:id" element={<SingleLearner />} />
             <Route path="/schedule" element={<Schedules />} />
             <Route path="/schedule/:id" element={<SingleTask />} />
+            <Route path="/quiz" element={<QuizPage />} />
             <Route path="/course/:courseId" element={<CourseContent />} />
             <Route path="/mylearnings" element={<MyLearnings />} />
             <Route path="/feature-selection" element={<FeatureSelection />} />
