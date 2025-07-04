@@ -10,7 +10,7 @@ const FinalAssessment = () => {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", marginTop: "1rem", flexDirection: "column" }}>
       <div style={{ display: "flex", flexWrap: "wrap", marginTop: "1rem",flexDirection: "column" }}>
-        <span style={{fontSize: "32px",fontFamily:"poppins", fontWeight: "bold", color: "#fff"}}>
+        <span style={{fontSize: "32px",fontFamily:"monospace", fontWeight: "bold", color: "#fff"}}>
           Final Assessment
         </span>
         <span style={{fontSize: "14px",fontFamily:"poppins", fontWeight: "bold", color: "GrayText"}}>

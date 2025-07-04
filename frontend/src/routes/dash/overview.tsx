@@ -1,46 +1,37 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bell, Play } from 'lucide-react'
-import { MetricCards } from "@/components/overview/metric-cards"
-import { PerformanceGraph } from "@/components/overview/performance-graph"
-import { TaskComparisonChart } from "@/components/overview/task-comparsion"
-import { SkillRadarChart } from "@/components/overview/skill-radar"
-import { ProgressTracker } from "@/components/overview/progress-tracker"
-import { ActivityTable } from "@/components/overview/activity-table"
-import { NotificationsPanel } from "@/components/overview/notifications-panel"
-import { CommunityEngagement } from "@/components/overview/community-engagement"
-import { useState } from "react"
+
 import Footer from "@/components/footer/footer"
 import StudyStreaks from "@/components/overview/StudyPlan"
 import { Planner } from "@/routes/dash/planner"
 import ContinueLearning from "../../../src/routes/dash/continue-reading"
 import StartLearning from "../../../src/routes/dash/start-learning"
 import Categories from "../../../src/routes/dash/categories"
-import LearnerLevelQuiz from "./learner-level-quiz"
+import SearchBar from "./Overview/searchbar"
+import { useState } from "react";
+
 
 const Overview = () => {
+  const [searchResults, setSearchResults] = useState([]);
+
   return (
     <div className="w-full p-4">
       {/* Header */}
       <main className="flex items-center gap-4 w-full">
   {/* Left Section */}
-  <div className="flex flex-col gap-1">
-    <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-      Welcome Back, ABC!
-    </h1>
-    <p className="text-muted-foreground text-sm font-light tracking-tight leading-tight whitespace-normal">
-      Continue your journey with our curator
-    </p>
-  </div>
+    {/* Header */}
+<div className="mb-6">
+  <h1 className="text-3xl font-semibold tracking-tight ">
+    Welcome Back, ABC!
+  </h1>
+  <p className="text-muted-foreground text-sm font-light tracking-tight leading-tight whitespace-normal">
+    Continue your journey with our curator
+  </p>
+</div>
 
-  {/* Search Bar - right aligned, full width on small screens, rounded corners */}
-  <div className="flex-1 flex justify-end md:justify-center">
-    <input
-      type="text"
-      placeholder="Search..."
-      className="w-full md:w-[58rem] px-4 py-2 text-sm border rounded-full bg-background border-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-      />
-  </div>
+{/* Search */}
+<div >
+  <SearchBar/>
+</div>
+
 </main>
 
 

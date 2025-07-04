@@ -40,7 +40,7 @@ const createUserSchema = z.object({
       message: "Password must contain at least one special character.",
     }),
 });
-export const LoginUserSchema = z.object({
+const LoginUserSchema = z.object({
   mobile: z
     .string()
     .length(10, { message: "Mobile number must be exactly 10 digits." })

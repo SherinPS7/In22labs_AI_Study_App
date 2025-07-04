@@ -27,6 +27,7 @@ import ContactUsPage from '../../frontend/src/components/root/home/contact-us';
 import ScrollToTop from "./utils/scrollToTop"
 import ProtectedRoute from "./components/auth/ProtectedRoute"
 import MyLearnings from "./routes/dash/MyLearnings/myLearnings"
+import CourseOverview from "./routes/dash/CourseOverview/courseOverview"
 
 
 function App() {
@@ -70,6 +71,7 @@ function App() {
             <Route path="/schedule" element={<Schedules />} />
             <Route path="/schedule/:id" element={<SingleTask />} />
             <Route path="/course/:courseId" element={<CourseContent />} />
+            <Route path="/course-overview/:courseId" element={<CourseOverview />} />
             <Route path="/mylearnings" element={<MyLearnings />} />
             <Route path="/feature-selection" element={<FeatureSelection />} />
             <Route path="/contact-us" element={<ContactUsPage />} />

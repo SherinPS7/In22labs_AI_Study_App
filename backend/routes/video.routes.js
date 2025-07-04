@@ -10,5 +10,6 @@ router.delete('/:id', videoController.deleteVideo);
 router.get('/course/:courseId', videoController.getVideosByCourseId);
 router.put('/progress/:videoId', videoController.updateVideoProgress);
 router.get('/course/progress/:courseId', videoController.getTotalVideoProgress);
+router.post('/video', videoController.createIndididualVideo);
 
 module.exports = router;
