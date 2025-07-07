@@ -11,7 +11,10 @@
     "express": "^5.1.0",
     "express-session": "^1.18.1",
     "firebase-admin": "^13.3.0",
+    "get-stream": "^9.0.1",
+    "node-cron": "^4.2.0",
     "openai": "^4.97.0",
+    "pdfkit": "^0.17.1",
     "pg": "^8.15.6",
     "sequelize": "^6.37.7",
     "zod": "^3.25.67"

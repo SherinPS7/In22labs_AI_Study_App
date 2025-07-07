@@ -1,8 +1,11 @@
+const { default: axios } = require('axios');
 const db = require('../models');
 const Course = db.Course; 
 const Videos = db.Videos;
 const Keywords = db.Keywords;
 const generateKeywords = require('../utils/generateKeywords');
+const enrollKeywordsAndVideos = require('../utils/enrollKeywordsAndVideos');
+const { Op } = require('sequelize');
 
 exports.getAllCourses = async (req, res) => {
   try {
@@ -46,7 +49,9 @@ exports.updateCourse = async (req, res) => {
 };
 
 exports.createCourse = async (req, res) => {
-  const { course_name, user_id_foreign_key } = req.body;
+  const { course_name } = req.body;
+  const user_id_foreign_key = req.session.userId;
+  const ref_course_id = null;
 
   if (!course_name || !user_id_foreign_key) {
     return res.status(400).json({ error: 'course_name and user_id_foreign_key are required' });
@@ -92,8 +97,17 @@ exports.deleteCourse = async (req, res) => {
 };
 
 exports.getCoursesByUserId = async (req, res) => {
-  const userId = req.params.userId;
+  // const userId = req.session?.userId || req.params.userId;
+  // const userId = req.session?.userId;
+  // console.log('Fetching courses for user ID:', req.session.cookie);
 
+  const userId = req.session.userId;  // ✅ Use session userId
+  console.log('Fetching courses for user ID:', userId);
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized access: No session' });
+  }
+  
   try {
     const courses = await Course.findAll({
       where: { user_id_foreign_key: userId }
@@ -102,5 +116,60 @@ exports.getCoursesByUserId = async (req, res) => {
   } catch (error) {
     console.error('Error fetching courses by user ID:', error);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+exports.enrollCourse = async (req, res) => {
+  const { courseId } = req.body;
+  const userId = req.session.userId;
+
+  if (!courseId || !userId) {
+    return res.status(400).json({ error: 'courseId and userId are required' });
+  }
+
+  try {
+    const course = await Course.findByPk(courseId);
+    if (!course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    const CourseToEnroll = {
+      user_id_foreign_key: userId,
+      course_name: course.course_name,
+      ref_course_id: course.id  
+    };
+
+    const courseCreated = await Course.create(CourseToEnroll);
+    const result = await enrollKeywordsAndVideos(courseId, courseCreated.id);
+
+    if (!result.success) {
+      return res.status(500).json({
+        error: result.error || 'Failed to enroll in course',
+        rawResponse: result.raw || null
+      });
+    }
+
+    res.json({ message: 'Successfully enrolled in the course' });
+  } catch (error) {
+    console.error('Error enrolling in course:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+exports.searchCourses = async (req, res) => {
+  const query = req.query.query || "";
+  try {
+    const courses = await Course.findAll({
+      where: {
+        course_name: {
+          [Op.iLike]: `%${query}%`, // PostgreSQL (case-insensitive LIKE)
+        },
+      },
+    });
+
+    res.json(courses);
+  } catch (error) {
+    console.error("Error searching courses:", error);
+    res.status(500).json({ error: "Server error while searching" });
   }
 };

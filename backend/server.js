@@ -14,8 +14,8 @@ const studyProgressRoutes = require('./routes/studyProgress');
 
 
 const app = express();
-
-// ✅ Enable CORS for frontend (5173) and allow credentials
+app.use('/certificates', express.static('public/certificates'));
+// Enable CORS for specific origin
 app.use(cors({
   origin: 'http://localhost:5173',
   credentials: true,
@@ -74,6 +74,19 @@ app.get('/', (req, res) => {
 app.get('/api', (req, res) => {
   res.json({ message: 'API is working!' });
 });
+
+
+
+
+// Built-in JSON parser
+app.use(express.urlencoded({ extended: true }));
+
+// Database connection
+sequelize.authenticate()
+  .then(() => console.log('Database connected successfully'))
+  
+  .catch(err => console.error('Database connection error:', err));
+   require('./utils/cleanup');
 
 // Sync models with the database
 sequelize.sync({alter: true}) // Set to true only for development alter: true force: false

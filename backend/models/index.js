@@ -17,6 +17,7 @@ db.Streak = require('./streak')(sequelize, DataTypes);
 db.StudyPlan = require('./StudyPlan')(sequelize, DataTypes); // Fixed: was StudyPlans, now StudyPlan
 db.UserFeatures = require('./UserFeatures')(sequelize, DataTypes);
 db.ToDoList = require('./ToDoList')(sequelize, DataTypes);
+db.QuizAttempt = require('./QuizAttempt')(sequelize, DataTypes);
 
 // StudyProgress now follows standard pattern
 db.StudyProgress = require('./StudyProgress')(sequelize, DataTypes);

@@ -1,6 +1,6 @@
 const { z } = require("zod");
 
-const createUserSchema = z.object({
+ const createUserSchema = z.object({
   firstname: z
     .string()
     .max(50, { message: "First name is too large, maximum is 50 characters." })
@@ -40,7 +40,7 @@ const createUserSchema = z.object({
       message: "Password must contain at least one special character.",
     }),
 });
-const LoginUserSchema = z.object({
+ const LoginUserSchema = z.object({
   mobile: z
     .string()
     .length(10, { message: "Mobile number must be exactly 10 digits." })

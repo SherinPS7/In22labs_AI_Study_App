@@ -9,6 +9,8 @@ import ContinueLearning from "../../../src/routes/dash/continue-reading";
 import StartLearning from "../../../src/routes/dash/start-learning";
 import Footer from "@/components/footer/footer";
 import { Plus, Calendar, Clock, BookOpen, Target, TrendingUp, Flame,Trophy,Edit,Trash2 } from 'lucide-react';
+import SearchBar from "./Overview/searchbar"
+
 
 interface StudyPlan {
   id: number;
@@ -20,7 +22,7 @@ interface StudyPlan {
   study_time: number;
 }
 
-const StudyOverview = ({ userId = 1 }) => {
+const Overview = ({ userId = 1 }) => {
   const [showText, setShowText] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);
@@ -75,6 +77,19 @@ const StudyOverview = ({ userId = 1 }) => {
     handleClosePopup();
   };
 
+
+// import Footer from "@/components/footer/footer"
+// import StudyStreaks from "@/components/overview/StudyPlan"
+// import { Planner } from "@/routes/dash/planner"
+// import ContinueLearning from "../../../src/routes/dash/continue-reading"
+// import StartLearning from "../../../src/routes/dash/start-learning"
+// import Categories from "../../../src/routes/dash/categories"
+// import SearchBar from "./Overview/searchbar"
+// import { useState } from "react";
+
+
+  const [searchResults, setSearchResults] = useState([]);
+
   return (
     <div className="w-full max-w-7xl mx-auto px-2 py-4">
       {/* Header Section */}
@@ -90,12 +105,10 @@ const StudyOverview = ({ userId = 1 }) => {
         </div>
 
         {/* Search Bar + Plus Icon */}
-        <div className="flex-1 flex justify-center items-center gap-2">
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full max-w-2xl px-4 py-2 text-sm border rounded-full bg-background border-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-          />
+        {/* <div className="flex-1 flex justify-center items-center gap-2"> */}
+        <div >
+          <SearchBar/>
+        </div>
           <button
             onClick={handlePlusClick}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 ease-in-out"
@@ -103,7 +116,7 @@ const StudyOverview = ({ userId = 1 }) => {
             <Plus className="h-5 w-5" />
             {showText && <span className="whitespace-nowrap">Generate New Course</span>}
           </button>
-        </div>
+        {/* </div> */}
       </main>
 
       {/* Messages */}
@@ -380,4 +393,4 @@ const StudyOverview = ({ userId = 1 }) => {
   );
 };
 
-export default StudyOverview;
+export default Overview;
