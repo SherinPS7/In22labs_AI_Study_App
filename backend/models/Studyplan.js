@@ -1,15 +1,63 @@
+'use strict';
+
 module.exports = (sequelize, DataTypes) => {
   const StudyPlan = sequelize.define('StudyPlan', {
-    plan_name: DataTypes.STRING,
-    user_id_foreign_key: DataTypes.INTEGER,
-    start_date: DataTypes.DATE,
-    end_date: DataTypes.DATE,
-    weekdays: DataTypes.STRING,  
-    study_time: DataTypes.TIME,
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    plan_name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    start_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
+    },
+    end_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false
+    },
+    weekdays: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      defaultValue: []
+    },
+    study_time: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    // ADD THESE NEW FIELDS
+    course_ids: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: []
+    },
+    course_settings: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: {}
+    },
+    course_count: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0
+    }
+  }, {
+    tableName: 'StudyPlans', 
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
   });
 
-  StudyPlan.associate = models => {
-    StudyPlan.belongsTo(models.User, { foreignKey: 'user_id_foreign_key' });
+  StudyPlan.associate = function(models) {
+    // Add associations if you have a User model
+    // StudyPlan.belongsTo(models.User, { foreignKey: 'user_id' });
   };
 
   return StudyPlan;

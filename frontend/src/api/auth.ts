@@ -98,6 +98,10 @@ export const resetPassword = async (mobile: string, newPassword: string) => {
   }
 };
 
+// ===============================
+// TODO/TASK FUNCTIONS
+// ===============================
+
 export const getAllTasks = async () => {
   try {
     const response = await axios.get(`${BASE_URL}/api/todos`, {
@@ -145,6 +149,120 @@ export const deleteTask = async (id: number) => {
   }
 };
 
+// Get all study plans for a user - UPDATED
+export const getAllStudyPlans = async (userId: number) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/study-plans?userId=${userId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to fetch study plans');
+  }
+};
+
+// Create a new study plan - UPDATED
+export const createStudyPlan = async (plan: {
+  user_id: number;
+  plan_name: string;
+  start_date: string;
+  end_date: string;
+  weekdays: string[];
+  study_time: number;
+  course_ids?: number[];
+  course_settings?: Record<string, any>;
+}) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/api/study-plans`, plan, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to create study plan");
+  }
+};
+
+// Update a study plan - UPDATED
+export const updateStudyPlan = async (
+  id: number,
+  plan: {
+    plan_name?: string;
+    start_date?: string;
+    end_date?: string;
+    weekdays?: string[];
+    study_time?: number;
+    course_ids?: number[];
+    course_settings?: Record<string, any>;
+  }
+) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/api/study-plans/${id}`, plan, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to update study plan");
+  }
+};
+
+export const deleteStudyPlan = async (id: number) => {
+  try {
+    const response = await axios.delete(`${BASE_URL}/api/study-plans/${id}`, {
+      withCredentials: true,
+    })
+    return response.data
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to delete study plan')
+  }
+}
+
+// Get registered courses for a user - NEW
+export const getRegisteredCourses = async (userId: number) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/studyplan/registered-courses?userId=${userId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to fetch registered courses");
+  }
+};
+
+// Get study plan with course details - NEW
+export const getStudyPlanWithCourses = async (id: number) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/study-plans/${id}/with-courses`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to fetch study plan with courses");
+  }
+};
+
+// Get study plans by user (with course details) - NEW
+export const getStudyPlansByUser = async (userId: number) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/study-plans/user/${userId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to fetch study plans by user");
+  }
+};
+
+// Get study progress for a plan - NEW
+export const getStudyProgress = async (planId: number, limit: number = 30) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/${planId}/progress?limit=${limit}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to fetch study progress");
+  }
+};
 
 // 🔒 Future placeholders for OTP/OAuth (if needed)
 export const createVerification = async () => { /* implement when ready */ };

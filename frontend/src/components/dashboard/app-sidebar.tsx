@@ -63,13 +63,13 @@ const integrations = [
   }
 ]
 
-const billing = [
-    {
-        title : "Billing",
-        url : "/billing",
-        icon : CircleDollarSignIcon
-    }
-]
+// const billing = [
+//     {
+//         title : "Billing",
+//         url : "/billing",
+//         icon : CircleDollarSignIcon
+//     }
+// ]
 
 const community = [
   {
@@ -114,9 +114,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          {/* <SidebarGroupLabel>Application</SidebarGroupLabel> */}
           <SidebarGroupContent>
-            <SidebarMenu>
+            {/* <SidebarMenu>
               {app.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
@@ -127,7 +127,7 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-            </SidebarMenu>
+            </SidebarMenu> */}
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
@@ -165,9 +165,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Payments</SidebarGroupLabel>
+          {/* <SidebarGroupLabel>Payments</SidebarGroupLabel> */}
           <SidebarGroupContent>
-            <SidebarMenu>
+            {/* <SidebarMenu>
               {billing.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
@@ -178,7 +178,7 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-            </SidebarMenu>
+            </SidebarMenu> */}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

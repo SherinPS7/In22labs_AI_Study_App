@@ -6,6 +6,12 @@ const routes = require('./routes/index.routes');
 const sequelize = require('./config/postgres');
 // Fix: Use require instead of import
 const todoRoutes = require('./routes/todolist.routes');
+const studyPlanRoutes = require('./routes/studyPlan.routes');
+const studyProgressRoutes = require('./routes/studyProgress');
+
+
+
+
 
 const app = express();
 
@@ -27,6 +33,38 @@ initSessionStore();
 app.use('/api', routes);
 // Add todo routes specifically
 app.use('/api/todos', todoRoutes);
+// add routes for study planner
+
+
+
+
+
+
+
+
+
+
+//get username
+app.get('/user/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const query = 'SELECT id, name FROM Users WHERE id = $1';
+    const result = await client.query(query, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.status(200).json({
+      message: 'User found',
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Error fetching user data' });
+  }
+});
 
 // ✅ Health check (optional)
 app.get('/', (req, res) => {
@@ -64,11 +102,11 @@ const startServer = async () => {
     const PORT = process.env.PORT || 4000;
     app.listen(PORT, () => {
       console.log(`🚀 Listening on port ${PORT}`);
-      console.log('📋 Available todo routes:');
-      console.log('  GET    /api/todos');
-      console.log('  POST   /api/todos');
-      console.log('  PUT    /api/todos/:id');
-      console.log('  DELETE /api/todos/:id');
+      // console.log('📋 Available todo routes:');
+      // console.log('  GET    /api/todos');
+      // console.log('  POST   /api/todos');
+      // console.log('  PUT    /api/todos/:id');
+      // console.log('  DELETE /api/todos/:id');
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
