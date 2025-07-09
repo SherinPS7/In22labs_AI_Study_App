@@ -3,6 +3,7 @@ const Course = db.Course;
 const Videos = db.Videos;
 const Keywords = db.Keywords;
 const generateKeywords = require('../utils/generateKeywords');
+const { createCourseMasterPlanInNotion } = require('../utils/createMasterPlanNotion');
 
 exports.getAllCourses = async (req, res) => {
   try {
@@ -52,31 +53,46 @@ exports.createCourse = async (req, res) => {
     return res.status(400).json({ error: 'course_name and user_id_foreign_key are required' });
   }
 
-  try{
-
-    const newCourse = await Course.create({course_name, user_id_foreign_key});
+  try {
+    const newCourse = await Course.create({ course_name, user_id_foreign_key });
 
     const result = await generateKeywords(course_name, newCourse.id);
     if (!result.success) {
       return res.status(201).json({
         course: newCourse,
-        warning: result.error || 'Keyword generation failed',
-        rawResponse: result.raw || null
+        generatedTopics: [],
+        generatedVideos: [],
+        videoUrls: [],
+        notionStatus: '⚠️ Keyword generation failed',
+        notionPageId: null,
+        notionError: result.error || 'Unknown keyword generation error',
+        rawResponse: result.raw || null,
       });
     }
+
+    const notionResult = await createCourseMasterPlanInNotion(
+      newCourse,
+      result.topics,
+      result.videosGenerated,
+      result.videoUrls
+    );
 
     return res.status(201).json({
       course: newCourse,
       generatedTopics: result.topics,
-      generatedVideos : result.videosGenerated
+      generatedVideos: result.videosGenerated,
+      videoUrls: result.videoUrls || [],
+      notionStatus: notionResult.success ? '✅ Page created' : '⚠️ Failed to create Notion page',
+      notionPageId: notionResult.pageId || null,
+      notionError: notionResult.error || null,
     });
-  }
 
-  catch (error) {
-    console.error('Error creating course and storing keywords:', error);
+  } catch (error) {
+    console.error('❌ Error creating course and storing keywords:', error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
+
 
 exports.deleteCourse = async (req, res) => {
   try {

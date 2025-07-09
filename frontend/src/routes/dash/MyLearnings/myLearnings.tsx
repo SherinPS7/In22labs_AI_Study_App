@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 const MyLearnings = () => {
   const backendURL = import.meta.env.VITE_BACKEND_URL;
 
-  const userId = 1; // Replace with actual userId if needed
+  const userId = 5; // Replace with actual userId if needed
 
   type Course = {
     id: number;

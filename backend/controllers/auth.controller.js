@@ -2,7 +2,7 @@ const { User } = require('../models'); // ✅ Fix if you're using module.exports
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
-// ✅ New Controller: Check if mobile number exists
+// New Controller: Check if mobile number exists
 exports.checkMobile = async (req, res) => {
   const { mobile } = req.body;
 
@@ -20,7 +20,7 @@ exports.checkMobile = async (req, res) => {
   }
 };
 
-// ✅ Final Signup (after OTP is verified on frontend)
+// Final Signup (after OTP is verified on frontend)
 exports.signup = async (req, res) => {
   const { firstname, lastname, mobile, password } = req.body;
    //console.log("Backend received:", req.body);  // <-- add this line
@@ -51,7 +51,7 @@ exports.signup = async (req, res) => {
     res.status(500).json({ message: 'Signup error', error: err.message });
   }
 };
-// ✅ New: Sign In with mobile and password
+//  New: Sign In with mobile and password
 exports.login = async (req, res) => {
   const { mobile, password } = req.body;
 
@@ -77,13 +77,14 @@ exports.login = async (req, res) => {
     req.session.lastname = user.last_name;
     req.session.mobile = user.mobile;
 
-    // ✅ Ensure session is saved before sending response
+    
     req.session.save((err) => {
       if (err) {
         console.error('Session save error:', err);
         return res.status(500).json({ message: 'Session save error', error: err.message });
       }
 
+      
       console.log('Session saved:', req.session); // Debug
       return res.status(200).json({
         message: 'Login successful',
