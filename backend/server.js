@@ -2,42 +2,82 @@
 require('dotenv').config(); // Load environment variables
 const express = require('express');
 const cors = require('cors');
-//const session = require('express-session');
-//const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const { sessionMiddleware, initSessionStore } = require('./config/session');
-const routes = require('./routes/index.routes');  // Correct path to your index routes
-//const streakRoutes = require('./routes/streak');  // Import your streak routes
+const routes = require('./routes/index.routes');
+const sequelize = require('./config/postgres');
+// Fix: Use require instead of import
+const todoRoutes = require('./routes/todolist.routes');
+const studyPlanRoutes = require('./routes/studyPlan.routes');
+const studyProgressRoutes = require('./routes/studyProgress');
 
-// Ensure all necessary env variables are set
+
+
 if (!process.env.DB_NAME || !process.env.DB_PASSWORD ) {
   console.error('Missing essential environment variables. Check .env file.');
   process.exit(1);
 }
 
-// Initialize Firebase Admin (from config/)
-const sequelize = require('./config/postgres');
-
-// Create Express app
 const app = express();
+app.use('/certificates', express.static('public/certificates'));
 // Enable CORS for specific origin
 app.use(cors({
-  //origin: '*',  // This allows requests from your frontend URL
-  origin:'http://localhost:5173',
-  credentials: true,  // If you're using cookies or authentication headers
+  origin: 'http://localhost:5173',
+  credentials: true,
 }));
 
-// Body parsers
+// ✅ Parse JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session middleware
+// ✅ Session Middleware
 app.use(sessionMiddleware);
 initSessionStore();
 
-
-
-// Mount routes
+// ✅ Mount routes under /api
 app.use('/api', routes);
+// Add todo routes specifically
+app.use('/api/todos', todoRoutes);
+// add routes for study planner
+
+
+
+
+
+
+
+
+
+
+//get username
+app.get('/user/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const query = 'SELECT id, name FROM Users WHERE id = $1';
+    const result = await client.query(query, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.status(200).json({
+      message: 'User found',
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Error fetching user data' });
+  }
+});
+
+// ✅ Health check (optional)
+app.get('/', (req, res) => {
+  res.send('Backend is running!');
+});
+
+app.get('/api', (req, res) => {
+  res.json({ message: 'API is working!' });
+});
 
 
 
@@ -48,19 +88,49 @@ app.use(express.urlencoded({ extended: true }));
 // Database connection
 sequelize.authenticate()
   .then(() => console.log('Database connected successfully'))
-  .catch(err => console.error(' Database connection error:', err));
+  
+  .catch(err => console.error('Database connection error:', err));
+   require('./utils/cleanup');
 
 // Sync models with the database
 sequelize.sync({alter: true}) // Set to true only for development alter: true force: false
   .then(() => console.log('Database schema synced'))
   .catch(err => console.error('Database sync error:', err));
+// ✅ Handle 404s
+app.use((req, res) => {
+  res.status(404).json({ error: 'Endpoint not found' });
+});
 
-// Error middleware
+// ✅ Error handler
 app.use((err, req, res, next) => {
   console.error(' Unhandled error:', err.stack);
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
+// ✅ Start server and connect DB
+const startServer = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('✅ Database connected');
+    
+    await sequelize.sync({ force: false });
+    console.log('✅ Database synced');
+    
+    const PORT = process.env.PORT || 4000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Listening on port ${PORT}`);
+      // console.log('📋 Available todo routes:');
+      // console.log('  GET    /api/todos');
+      // console.log('  POST   /api/todos');
+      // console.log('  PUT    /api/todos/:id');
+      // console.log('  DELETE /api/todos/:id');
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+  }
+};
+
+startServer();
 
 // 404 Handler
 app.use((req, res) => {

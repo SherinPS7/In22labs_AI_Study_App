@@ -28,6 +28,7 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.AssessmentScore, { foreignKey: 'user_id_foreign_key' });
     // User.hasMany(models.UserFeatures, { foreignKey: 'user_id_foreign_key' });
     User.hasMany(models.ToDoList, { foreignKey: 'user_id_foreign_key' });
+    User.hasMany(models.StudyPlan, {foreignKey: 'user_id_foreign_key'});
   };
 
   return User;

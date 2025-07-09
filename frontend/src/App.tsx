@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import Root from "./layouts/root"
 import Pricing from "./routes/root/pricing"
+import QuizPage from "../src/routes/dash/quiz/QuizPage"; 
 import Home from "./routes/root/home"
 import Auth from "./layouts/auth"
 import SignIn from "./routes/auth/sign-in"
@@ -27,6 +28,7 @@ import ContactUsPage from '../../frontend/src/components/root/home/contact-us';
 import ScrollToTop from "./utils/scrollToTop"
 import ProtectedRoute from "./components/auth/ProtectedRoute"
 import MyLearnings from "./routes/dash/MyLearnings/myLearnings"
+import CourseOverview from "./routes/dash/CourseOverview/courseOverview"
 
 
 function App() {
@@ -69,7 +71,9 @@ function App() {
             <Route path="/learn/:id" element={<SingleLearner />} />
             <Route path="/schedule" element={<Schedules />} />
             <Route path="/schedule/:id" element={<SingleTask />} />
+            <Route path="/quiz" element={<QuizPage />} />
             <Route path="/course/:courseId" element={<CourseContent />} />
+            <Route path="/course-overview/:courseId" element={<CourseOverview />} />
             <Route path="/mylearnings" element={<MyLearnings />} />
             <Route path="/feature-selection" element={<FeatureSelection />} />
             <Route path="/contact-us" element={<ContactUsPage />} />

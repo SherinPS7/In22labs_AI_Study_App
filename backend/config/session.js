@@ -17,7 +17,6 @@ const sessionMiddleware = session({
     secure: false,
     httpOnly: true,
     sameSite: 'lax',
-    
   },
 });
 

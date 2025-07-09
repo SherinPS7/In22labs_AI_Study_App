@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useEffect } from "react"; // ← ensure this is imported
+import { useOtpTimer } from "@/hooks/useOtpTimer";
 
 import axios from 'axios';
 import { CreateUserTypes } from "@/types/auth-types";
@@ -33,13 +34,41 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { setupRecaptcha, sendOtp } from '../../firebase/otpUtils';
 
+;
+
 const SignUp = () => {
+  useEffect(() => {
+  setupRecaptcha("recaptcha-container"); // ✅ only once
+}, [])
+useEffect(() => {
+  const savedMobile = localStorage.getItem("mobile");
+  const savedStep = localStorage.getItem("otp-step");
+  const savedTime = localStorage.getItem("otp-timestamp");
+
+  if (savedMobile) {
+    form.setValue("mobile", savedMobile);
+  }
+
+  if (savedStep === "otp") {
+    setStep("otp");
+  } else if (savedStep === "form") {
+    setStep("form");
+  }
+
+  if (savedTime) {
+    const diff = 60 - Math.floor((Date.now() - Number(savedTime)) / 1000);
+    if (diff > 0) start(diff);
+    else localStorage.removeItem("otp-timestamp");
+  }
+}, []);
+
   const [agreed, setAgreed] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const [step, setStep] = useState<"mobile" | "otp" | "form">("mobile");
   const [enteredOtp, setEnteredOtp] = useState("");
+const { seconds, active, start, stop } = useOtpTimer(60);
 
   const form = useForm<CreateUserTypes>({
     resolver: zodResolver(CreateUserSchema),
@@ -50,13 +79,6 @@ const SignUp = () => {
       password: "",
     },
   });
-
-  // Ensure this is inside JSX:
-  // <div id="recaptcha-container"></div>
-// useEffect(() => {
-//   setupRecaptcha("recaptcha-container");
-// }, []);
-
   const handleSendOtp = async () => {
     const mobile = form.watch("mobile");
 
@@ -71,7 +93,7 @@ const SignUp = () => {
 
     try {
       // Step 1: Check if mobile exists in backend
-      const res = await axios.post("http://localhost:5000/api/auth/check-mobile", { mobile });
+      const res = await axios.post("http://localhost:4000/api/auth/check-mobile", { mobile });
       if (res.data?.status === "exists") {
         toast({
           title: "Mobile Exists",
@@ -83,15 +105,19 @@ const SignUp = () => {
 
       // Step 2: Format the number
       const formattedPhone = mobile.startsWith("+") ? mobile : `+91${mobile}`;
-
+await setupRecaptcha("recaptcha-container"); // ✅ safe now
       // Step 3: Setup Firebase Recaptcha and send OTP
-      setupRecaptcha("recaptcha-container");
+   
       const result = await sendOtp(formattedPhone);
-      console.log("✅ OTP sent:", result);
+      console.log("✅ OTP sent:");
       setConfirmationResult(result);
 
+    const now = Date.now();
+    localStorage.setItem("mobile", mobile);
+    localStorage.setItem("otp-timestamp", now.toString());
+    localStorage.setItem("otp-step", "otp");
       setStep("otp");
-
+      start();
       toast({
         title: "OTP Sent",
         description: `OTP sent to ${formattedPhone}`,
@@ -119,6 +145,9 @@ const SignUp = () => {
 
       const result = await confirmationResult.confirm(enteredOtp);
       const user = result.user;
+       // Clear storage
+    localStorage.removeItem("otp-timestamp");
+    localStorage.setItem("otp-step", "form");
 
       console.log("✅ OTP verified:", user);
 
@@ -146,15 +175,24 @@ const SignUp = () => {
           title: "Success",
           description: "User has been successfully created",
         });
+        localStorage.removeItem("otp-timestamp");
+localStorage.removeItem("otp-step");
+localStorage.removeItem("mobile");
+
         navigate("/feature-selection");
       }
     } catch (error) {
       AppErrClient(error);
     }
   };
+  // Rendered always, hidden from view
+//<div id="recaptcha-container" className="hidden" />
+
   return (
     <div className="h-[calc(100vh-64px)] w-full flex bg-gradient-to-br from-black via-gray-900 to-green-900 relative overflow-hidden">
       {/* Background */}
+      <div id="recaptcha-container" className="hidden" />
+
       <div className="absolute inset-0 opacity-20">
         <svg className="absolute top-0 left-0 w-full h-full">
           <defs>
@@ -257,15 +295,20 @@ const SignUp = () => {
                       whileTap={{ scale: 0.95 }}
                       className="w-full"
                     >
-                      <div id="recaptcha-container"></div>
+                    {/* // <div id="recaptcha-container"></div> */}
+                    {/* <div id="recaptcha-container" className="hidden" /> */}
 
                       <Button
-                        type="button"
-                        className="w-full bg-green-600 hover:bg-green-700 text-white"
-                        onClick={handleSendOtp}
-                      >
-                       Get Otp
-                      </Button>
+        type="button"
+        className="w-full bg-green-600 hover:bg-green-700 text-white"
+        onClick={() => {
+          handleSendOtp();
+          start(); // ⏱️ Start OTP timer
+         }}
+         disabled={active} // ✅ Disable if timer running
+       >
+         {active ? `Resend in ${seconds}s` : "Get OTP"}
+      </Button>
                       {/* <div id="recaptcha-container"></div> */}
                     </motion.div>
                   </CardFooter>
@@ -279,7 +322,7 @@ const SignUp = () => {
                       value={enteredOtp}
                       onChange={(e) => setEnteredOtp(e.target.value)}
                     />
-                    <CardFooter className="flex w-full">
+                    {/* <CardFooter className="flex w-full">
                       <motion.div
                         whileHover={{
                           scale: 1.05,
@@ -295,8 +338,63 @@ const SignUp = () => {
                         >
                           Verify Mobile Number
                         </Button>
+                                       <motion.div
+    whileHover={{ scale: 1.05, boxShadow: "0px 0px 12px #22c55e" }}
+    whileTap={{ scale: 0.95 }}
+    className="w-full"
+  >
+     <div id="recaptcha-container"></div>
+    <Button
+      type="button"
+      className="w-full bg-gray-700 hover:bg-gray-800 text-white"
+      onClick={() => {
+       // setupRecaptcha("recaptcha-container");
+        handleSendOtp();
+        start(); // ⏱️ restart timer
+      }}
+      disabled={active}
+    >
+      {active ? `Resend in ${seconds}s` : "Resend OTP"}
+    </Button>
+  </motion.div>
                       </motion.div>
-                    </CardFooter>
+                    </CardFooter> */}
+                    <CardFooter className="flex flex-col gap-4 w-full">
+  {/* Verify Button */}
+  <motion.div
+    whileHover={{ scale: 1.05, boxShadow: "0px 0px 12px #22c55e" }}
+    whileTap={{ scale: 0.95 }}
+    className="w-full"
+  >
+    <Button
+      type="button"
+      className="w-full bg-green-600 hover:bg-green-700 text-white"
+      onClick={handleVerifyOtp}
+    >
+      Verify Mobile Number
+    </Button>
+  </motion.div>
+
+  {/* Resend OTP Button */}
+  <motion.div
+    whileHover={{ scale: 1.05, boxShadow: "0px 0px 12px #22c55e" }}
+    whileTap={{ scale: 0.95 }}
+    className="w-full"
+  >
+    <Button
+      type="button"
+      className="w-full bg-gray-700 hover:bg-gray-800 text-white"
+      onClick={() => {
+        handleSendOtp();
+        start(); // ⏱️ restart timer
+      }}
+      disabled={active}
+    >
+      {active ? `Resend in ${seconds}s` : "Resend OTP"}
+    </Button>
+  </motion.div>
+</CardFooter>
+
                   </div>
                 )}
 
