@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useNavigate } from "react-router-dom";
 import StudyPlanPopup from '../../../src/components/overview/studyplanui/studyplanpopup';
@@ -8,9 +8,8 @@ import { Planner } from "@/routes/dash/planner";
 import ContinueLearning from "../../../src/routes/dash/continue-reading";
 import StartLearning from "../../../src/routes/dash/start-learning";
 import Footer from "@/components/footer/footer";
-import { Plus, Calendar, Clock, BookOpen, Target, TrendingUp, Flame,Trophy,Edit,Trash2 } from 'lucide-react';
+import { Plus, Calendar, Clock, BookOpen, Target, TrendingUp, Flame, Trophy, Edit, Trash2 } from 'lucide-react';
 import SearchBar from "./Overview/searchbar"
-
 
 interface StudyPlan {
   id: number;
@@ -27,9 +26,8 @@ const Overview = ({ userId = 1 }) => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);
   const navigate = useNavigate();
-  
+
   const {
-    // State
     plans,
     loading,
     error,
@@ -37,8 +35,6 @@ const Overview = ({ userId = 1 }) => {
     activePlan,
     studyLogs,
     todayStudied,
-    
-    // Actions
     setError,
     setSuccess,
     handleDelete,
@@ -56,10 +52,10 @@ const Overview = ({ userId = 1 }) => {
   };
 
   const handleCreatePlan = () => {
-    console.log('Create plan button clicked'); // Debug log
-    setEditingPlan(null); // Ensure we're creating, not editing
+    console.log('Create plan button clicked');
+    setEditingPlan(null);
     setIsPopupOpen(true);
-    console.log('Popup should be open now'); // Debug log
+    console.log('Popup should be open now');
   };
 
   const handleEditPlan = (plan: StudyPlan) => {
@@ -73,50 +69,37 @@ const Overview = ({ userId = 1 }) => {
   };
 
   const handlePlanUpdate = () => {
-    fetchPlans(); // Refresh the plans list
-    handleClosePopup();
+      fetchPlans();
+      handleClosePopup();
   };
-
-
-// import Footer from "@/components/footer/footer"
-// import StudyStreaks from "@/components/overview/StudyPlan"
-// import { Planner } from "@/routes/dash/planner"
-// import ContinueLearning from "../../../src/routes/dash/continue-reading"
-// import StartLearning from "../../../src/routes/dash/start-learning"
-// import Categories from "../../../src/routes/dash/categories"
-// import SearchBar from "./Overview/searchbar"
-// import { useState } from "react";
-
 
   const [searchResults, setSearchResults] = useState([]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-2 py-4">
+    <div className="w-full max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 xl:max-w-screen-xl"> {/* Added xl:max-w-screen-xl */}
       {/* Header Section */}
-      <main className="flex flex-row items-center gap-4 w-full mb-6">
+      <main className="flex flex-col md:flex-row items-center justify-between gap-4 w-full mb-6">
         {/* Welcome Message */}
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground whitespace-nowrap">
+        <div className="flex flex-col text-center md:text-left">
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground whitespace-nowrap">
             Welcome Back, ABC!
           </h1>
-          <p className="text-muted-foreground text-sm font-light tracking-tight leading-tight whitespace-nowrap">
+          <p className="text-muted-foreground text-sm md:text-base font-light tracking-tight leading-tight whitespace-nowrap">
             Continue your journey with our curator
           </p>
         </div>
 
         {/* Search Bar + Plus Icon */}
-        {/* <div className="flex-1 flex justify-center items-center gap-2"> */}
-        <div >
-          <SearchBar/>
-        </div>
+        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+          <SearchBar />
           <button
             onClick={handlePlusClick}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 ease-in-out"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 ease-in-out w-full md:w-auto justify-center"
           >
             <Plus className="h-5 w-5" />
             {showText && <span className="whitespace-nowrap">Generate New Course</span>}
           </button>
-        {/* </div> */}
+        </div>
       </main>
 
       {/* Messages */}
@@ -134,8 +117,8 @@ const Overview = ({ userId = 1 }) => {
       {/* Study Progress Section */}
       <Card className="mb-6 bg-gray shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center">
+          <CardTitle className="flex flex-col md:flex-row items-center justify-between text-lg md:text-xl">
+            <div className="flex items-center mb-2 md:mb-0">
               <TrendingUp className="w-5 h-5 mr-2" />
               Your Progress
             </div>
@@ -172,7 +155,7 @@ const Overview = ({ userId = 1 }) => {
           )}
 
           {/* Streak and Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mb-4"> {/* Added xl:grid-cols-3 */}
             {/* Streak Card */}
             <div className="bg-gray shadow-lg rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
@@ -193,7 +176,7 @@ const Overview = ({ userId = 1 }) => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="text-center">
                 <p className="text-green-600 font-medium">
                   {metrics.currentStreak > 0 ? `🔥 ${metrics.currentStreak} day streak!` : 'Start your streak today!'}
@@ -222,34 +205,9 @@ const Overview = ({ userId = 1 }) => {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Last 7 Days and Monthly Goal */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Last 7 Days */}
-            <div className="bg-gray shadow-lg rounded-lg p-6">
-              <h3 className="font-medium mb-3 flex items-center">
-                <Calendar className="w-4 h-4 mr-2" />
-                Last 7 Days
-              </h3>
-              <div className="flex justify-between gap-1">
-                {metrics.last7Days.map((day, idx) => (
-                  <div key={idx} className="flex flex-col items-center">
-                    <div
-                      className={`${
-                        day.studied ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
-                      } w-8 h-8 flex items-center justify-center rounded-full mb-1 text-xs font-medium`}
-                    >
-                      {day.studied ? '✓' : '○'}
-                    </div>
-                    <span className="text-xs text-gray-600">{day.date}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Monthly Goal */}
-            <div className="bg-gray shadow-lg rounded-lg p-6">
+            {/* Monthly Goal - Moved here for better layout on large screens */}
+            <div className="bg-gray shadow-lg rounded-lg p-6 lg:col-span-1 xl:col-span-1"> {/* Adjusted col-span */}
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-medium flex items-center">
                   <Target className="w-4 h-4 mr-2" />
@@ -265,6 +223,30 @@ const Overview = ({ userId = 1 }) => {
               <p className="text-xs text-gray-600 text-center">
                 {Math.round((metrics.weeklyDaysStudied / 20) * 100)}% of monthly goal achieved
               </p>
+            </div>
+          </div>
+
+          {/* Last 7 Days - Now separate for better control */}
+          <div className="grid grid-cols-1"> {/* Simplified to always be 1 column for its specific content */}
+            <div className="bg-gray shadow-lg rounded-lg p-6">
+              <h3 className="font-medium mb-3 flex items-center">
+                <Calendar className="w-4 h-4 mr-2" />
+                Last 7 Days
+              </h3>
+              <div className="flex justify-between gap-1 overflow-x-auto pb-2">
+                {metrics.last7Days.map((day, idx) => (
+                  <div key={idx} className="flex flex-col items-center flex-shrink-0 w-1/7">
+                    <div
+                      className={`${
+                        day.studied ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+                      } w-8 h-8 flex items-center justify-center rounded-full mb-1 text-xs font-medium`}
+                    >
+                      {day.studied ? '✓' : '○'}
+                    </div>
+                    <span className="text-xs text-gray-600">{day.date}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -285,7 +267,7 @@ const Overview = ({ userId = 1 }) => {
               Create New Study Plan
             </button>
           </div>
-          
+
           {/* Debug info - remove this after testing */}
           <div className="text-sm text-gray-500 mb-2">
             Popup State: {isPopupOpen ? 'Open' : 'Closed'}
@@ -312,8 +294,8 @@ const Overview = ({ userId = 1 }) => {
                 const status = getPlanStatus(plan.start_date, plan.end_date);
                 return (
                   <div key={plan.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-semibold text-white-800">{plan.plan_name}</h3>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
+                      <h3 className="text-lg font-semibold text-white-800 mb-2 md:mb-0">{plan.plan_name}</h3>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEditPlan(plan)}
@@ -329,14 +311,14 @@ const Overview = ({ userId = 1 }) => {
                         </button>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm text-gray-600">
                       <div>
                         <p><strong>Duration:</strong> {formatDate(plan.start_date)} - {formatDate(plan.end_date)}</p>
                         <p><strong>Daily Study Time:</strong> {plan.study_time} minutes</p>
                       </div>
                       <div>
                         <p><strong>Study Days:</strong> {Array.isArray(plan.weekdays) ? plan.weekdays.join(', ') : 'N/A'}</p>
-                        <p><strong>Status:</strong> 
+                        <p><strong>Status:</strong>
                           <span className={`ml-1 px-2 py-1 rounded text-xs ${
                             status === 'active' ? 'bg-green-100 text-green-800' :
                             status === 'upcoming' ? 'bg-blue-100 text-blue-800' :

@@ -11,7 +11,10 @@ const studyProgressRoutes = require('./routes/studyProgress');
 
 
 
-
+if (!process.env.DB_NAME || !process.env.DB_PASSWORD ) {
+  console.error('Missing essential environment variables. Check .env file.');
+  process.exit(1);
+}
 
 const app = express();
 app.use('/certificates', express.static('public/certificates'));
