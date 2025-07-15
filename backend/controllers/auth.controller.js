@@ -65,6 +65,13 @@ exports.signup = async (req, res) => {
 };
 // ✅ New: Sign In with mobile and password
 exports.login = async (req, res) => {
+  const result = LoginUserSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Validation failed",
+      errors: result.error.flatten().fieldErrors,
+    });
+  }
   const { mobile, password } = req.body;
 
   if (!mobile || !password) {

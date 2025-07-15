@@ -126,7 +126,7 @@ const keywordIds = courseKeywords.map((keywordObj: any) => keywordObj.id);
               </button>
             ))}
           </div> */}
-          <div
+          {/* <div
             className="keyword-container"
             style={{
               display: "flex",
@@ -158,7 +158,7 @@ const keywordIds = courseKeywords.map((keywordObj: any) => keywordObj.id);
                 {keyword.keyword}
               </button>
             ))}
-          </div> 
+          </div>  */}
           <div
             className="keyword-container"
             style={{
