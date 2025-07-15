@@ -4,7 +4,7 @@ const router = express.Router();
 
 router.use('/auth', require('./auth.routes'));
 // router.use('/users', require('./user.routes'));
-router.use('/plans', require('./plans.routes'));
+// router.use('/plans', require('./plans.routes'));
 
 //r//outer.use('/streaks', require('./streak.routes'));
 router.use('/integrations', require('./integrations.routes'));
@@ -22,5 +22,11 @@ router.use('/courses', require('./course.routes'));
 router.use('/keywords', require('./keywords.routes'));
 router.use('/quiz', require('./quiz.routes'));
 router.use('/certificate', require('./certificate.routes'));
+
+router.use('/todolist', require('./todolist.routes'));
+
+router.use('/studyplan', require('./studyPlan.routes'));
+
+router.use('/registered-courses', require('./studyPlan.routes'));
 
 module.exports = router;
