@@ -257,7 +257,7 @@ const CourseSelectionStep: React.FC<CourseSelectionStepProps> = ({
 
   const fetchRegisteredCourses = async () => {
     try {
-      const url = `http://localhost:4000/api/studyplan/registered-courses?userId=${userId}`;
+      const url = `http://localhost:3000/api/studyplan/registered-courses?userId=${userId}`;
       console.log('Fetching from URL:', url);
       
       const response = await fetch(url, {

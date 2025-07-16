@@ -21,7 +21,7 @@ interface StudyPlan {
   study_time: number;
 }
 
-const Overview = ({ userId = 1 }) => {
+const Overview = ({ userId = 27 }) => {
   const [showText, setShowText] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);

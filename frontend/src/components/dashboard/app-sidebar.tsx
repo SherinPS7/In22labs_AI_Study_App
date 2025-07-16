@@ -56,6 +56,11 @@ const integrations = [
       title : "Google Calendar",
       url : "/connect-gcalendar",
       icon : GoogleCalendarIcon
+  },
+   {
+    title: "Groups",
+    url: "/groups",
+    icon: Users,
   },{
     title : "Notion",
     url : "/connect-notion",
