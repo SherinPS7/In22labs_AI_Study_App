@@ -27,6 +27,7 @@ router.use('/todolist', require('./todolist.routes'));
 router.use('/studyplan', require('./studyPlan.routes'));
 
 router.use('/registered-courses', require('./studyPlan.routes'));
+router.use('/group', require('./group.routes'));
 router.use('/notion', require('./notion.routes'));
 router.use('/profile', require('./userProfile.routes'));
 

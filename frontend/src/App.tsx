@@ -7,6 +7,8 @@ import Auth from "./layouts/auth"
 import SignIn from "./routes/auth/sign-in"
 import SignUp from "./routes/auth/sign-up"
 import SendMobile from "./routes/auth/send-mobile"
+import GroupLanding from "./components/overview/Groups/GroupLanding";
+import GroupDetails from "./components/overview/Groups/GroupDetails";
 import ActivateEmail from "./routes/auth/activate-email"
 import ResetPassword from "./routes/auth/reset-password"
 import Dash from "./layouts/main"
@@ -77,6 +79,8 @@ function App() {
             <Route path="/mylearnings" element={<MyLearnings />} />
             <Route path="/feature-selection" element={<FeatureSelection />} />
             <Route path="/contact-us" element={<ContactUsPage />} />
+            <Route path="/groups" element={<GroupLanding />} />
+            <Route path="/group/:id" element={<GroupDetails />} />
             <Route path="/profile" element={<UserProfile/>} />
           </Route>
         </Routes>
