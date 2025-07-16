@@ -7,7 +7,7 @@
 // Update today's study minutes
 const updateTodayProgress = async (userId, minutesStudied, notes = '') => {
     try {
-      const response = await fetch(`http://localhost:4000/api/study-progress/today/${userId}`, {
+      const response = await fetch(`http://localhost:3000/api/study-progress/today/${userId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -33,7 +33,7 @@ const updateTodayProgress = async (userId, minutesStudied, notes = '') => {
   // Get all streak information for dashboard
   const getStreakData = async (userId) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/study-progress/streaks/${userId}`);
+      const response = await fetch(`http://localhost:3000/api/study-progress/streaks/${userId}`);
       const data = await response.json();
       
       console.log('Streak Data:', {
@@ -57,7 +57,7 @@ const updateTodayProgress = async (userId, minutesStudied, notes = '') => {
   // Set daily target and monthly goal
   const updateUserPreferences = async (userId, dailyTarget, monthlyGoal) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/study-progress/preferences/${userId}`, {
+      const response = await fetch(`http://localhost:3000/api/study-progress/preferences/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ const updateTodayProgress = async (userId, minutesStudied, notes = '') => {
   const getProgressByDateRange = async (userId, startDate, endDate) => {
     try {
       const response = await fetch(
-        `http://localhost:4000/api/study-progress/range/${userId}?startDate=${startDate}&endDate=${endDate}`
+        `http://localhost:3000/api/study-progress/range/${userId}?startDate=${startDate}&endDate=${endDate}`
       );
       const data = await response.json();
       
@@ -103,7 +103,7 @@ const updateTodayProgress = async (userId, minutesStudied, notes = '') => {
   const StudySessionExample = {
     // When user starts studying
     startStudySession: async (userId) => {
-      const todayProgress = await fetch(`http://localhost:4000/api/study-progress/today/${userId}`)
+      const todayProgress = await fetch(`http://localhost:3000/api/study-progress/today/${userId}`)
         .then(res => res.json());
       
       console.log('Current progress:', todayProgress.progress);
@@ -129,8 +129,8 @@ const updateTodayProgress = async (userId, minutesStudied, notes = '') => {
     loadDashboard: async (userId) => {
       const [streakData, todayProgress, preferences] = await Promise.all([
         getStreakData(userId),
-        fetch(`http://localhost:4000/api/study-progress/today/${userId}`).then(res => res.json()),
-        fetch(`http://localhost:4000/api/study-progress/preferences/${userId}`).then(res => res.json())
+        fetch(`http://localhost:3000/api/study-progress/today/${userId}`).then(res => res.json()),
+        fetch(`http://localhost:3000/api/study-progress/preferences/${userId}`).then(res => res.json())
       ]);
   
       return {

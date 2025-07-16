@@ -12,8 +12,7 @@ import { Button } from '../ui/button';
 import { User } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+
 import { formatDate } from '@/utils/format-date';
 
 const DEFAULT_AVATAR = '/cta (1).png'; // Place a local image in your public folder

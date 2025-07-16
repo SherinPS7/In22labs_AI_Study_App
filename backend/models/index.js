@@ -21,7 +21,7 @@ db.QuizAttempt = require('./QuizAttempt')(sequelize, DataTypes);
 
 // StudyProgress now follows standard pattern
 db.StudyProgress = require('./StudyProgress')(sequelize, DataTypes);
-
+db.NotionToken = require('./NotionToken')(sequelize, DataTypes);
 // Set up associations - with proper error checking
 Object.keys(db).forEach(modelName => {
   // Skip Sequelize and sequelize properties, and check if associate function exists

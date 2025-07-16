@@ -44,21 +44,25 @@ const StartLearning = () => {
   const [courses, setCourses] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/recommendations/5');
-        const data = await response.json();
-        setCourses(data.recommendations || []);
-      } catch (error) {
-        console.error('Failed to fetch recommendations:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+useEffect(() => {
+  const fetchRecommendations = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/recommendations', {
+        method: 'GET',
+        credentials: 'include', // ✅ This allows cookies to be sent
+      });
 
-    fetchRecommendations();
-  }, []);
+      const data = await response.json();
+      setCourses(data.recommendations || []);
+    } catch (error) {
+      console.error('Failed to fetch recommendations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchRecommendations();
+}, []);
 
   if (loading) {
     return <div className="text-center mt-6 text-muted-foreground">Loading recommendations...</div>;

@@ -33,6 +33,8 @@ interface StudyPlanData {
   end_date: string;
   course_ids: number[];
   course_settings: Record<string, CourseSettings>;
+   sync_with_notion?: boolean;
+  sync_with_google?: boolean; 
 }
 
 interface StudyPlanPopupProps {
@@ -61,7 +63,9 @@ const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
     start_date: '',
     end_date: '',
     course_ids: [],
-    course_settings: {}
+    course_settings: {},
+    sync_with_notion: false, 
+  sync_with_google: false,
   });
 
   const steps = [
@@ -92,15 +96,18 @@ const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
         .reduce((sum, setting) => sum + setting.daily_hours, 0) * 60; // Convert to minutes
 
       const planData = {
-        plan_name: studyPlanData.plan_name.trim(),
-        user_id: userId,
-        start_date: studyPlanData.start_date,
-        end_date: studyPlanData.end_date,
-        weekdays: selectedWeekdays,
-        study_time: totalStudyTime,
-        course_ids: studyPlanData.course_ids,
-        course_settings: studyPlanData.course_settings
-      };
+  plan_name: studyPlanData.plan_name.trim(),
+  user_id: userId,
+  start_date: studyPlanData.start_date,
+  end_date: studyPlanData.end_date,
+  weekdays: selectedWeekdays,
+  study_time: totalStudyTime,
+  course_ids: studyPlanData.course_ids,
+  course_settings: studyPlanData.course_settings,
+  sync_with_notion: studyPlanData.sync_with_notion || false,   // ✅ Add this
+  sync_with_google: studyPlanData.sync_with_google || false    // ✅ Add this
+};
+
 
       console.log('Submitting plan data:', planData);
 
@@ -257,7 +264,7 @@ const CourseSelectionStep: React.FC<CourseSelectionStepProps> = ({
 
   const fetchRegisteredCourses = async () => {
     try {
-      const url = `http://localhost:4000/api/studyplan/registered-courses?userId=${userId}`;
+      const url = `http://localhost:3000/api/studyplan/registered-courses?userId=${userId}`;
       console.log('Fetching from URL:', url);
       
       const response = await fetch(url, {
@@ -483,7 +490,40 @@ const CourseScheduleStep: React.FC<CourseScheduleStepProps> = ({
     <div>
       <h3 className="text-lg font-semibold mb-2">Set Schedule for Each Course</h3>
       <p className="text-green-600 mb-4">Configure study time and days for each selected course</p>
-      
+      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+  <div className="flex items-center gap-4">
+    <label className="flex items-center space-x-2 text-sm font-medium text-blue-700">
+      <input
+        type="checkbox"
+        checked={studyPlanData.sync_with_notion || false}
+        onChange={() =>
+          setStudyPlanData(prev => ({
+            ...prev,
+            sync_with_notion: !prev.sync_with_notion
+          }))
+        }
+        className="h-4 w-4 text-blue-600"
+      />
+      <span>Sync with Notion</span>
+    </label>
+
+    <label className="flex items-center space-x-2 text-sm font-medium text-blue-700">
+      <input
+        type="checkbox"
+        checked={studyPlanData.sync_with_google || false}
+        onChange={() =>
+          setStudyPlanData(prev => ({
+            ...prev,
+            sync_with_google: !prev.sync_with_google
+          }))
+        }
+        className="h-4 w-4 text-blue-600"
+      />
+      <span>Sync with Google Calendar</span>
+    </label>
+  </div>
+</div>
+
       <div className="space-y-4 mb-6">
         {selectedCourses.map(course => {
           const settings = studyPlanData.course_settings[course.id] || { daily_hours: 1, study_days: [], notes: '' };

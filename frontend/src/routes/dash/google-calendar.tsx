@@ -114,7 +114,7 @@ export default function CalendarView() {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/plans/",
+        const res = await fetch("http://localhost:3000/api/plans/",
 
           {
              method: "GET",

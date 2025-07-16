@@ -67,28 +67,16 @@ exports.createCourse = async (req, res) => {
         generatedTopics: [],
         generatedVideos: [],
         videoUrls: [],
-        notionStatus: '⚠️ Keyword generation failed',
-        notionPageId: null,
-        notionError: result.error || 'Unknown keyword generation error',
+        keywordError: result.error || 'Unknown keyword generation error',
         rawResponse: result.raw || null,
       });
     }
-
-    const notionResult = await createCourseMasterPlanInNotion(
-      newCourse,
-      result.topics,
-      result.videosGenerated,
-      result.videoUrls
-    );
 
     return res.status(201).json({
       course: newCourse,
       generatedTopics: result.topics,
       generatedVideos: result.videosGenerated,
       videoUrls: result.videoUrls || [],
-      notionStatus: notionResult.success ? '✅ Page created' : '⚠️ Failed to create Notion page',
-      notionPageId: notionResult.pageId || null,
-      notionError: notionResult.error || null,
     });
 
   } catch (error) {
@@ -96,6 +84,7 @@ exports.createCourse = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
+
 
 
 exports.deleteCourse = async (req, res) => {
@@ -188,3 +177,4 @@ exports.searchCourses = async (req, res) => {
     res.status(500).json({ error: "Server error while searching" });
   }
 };
+

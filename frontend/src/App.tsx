@@ -29,7 +29,7 @@ import ScrollToTop from "./utils/scrollToTop"
 import ProtectedRoute from "./components/auth/ProtectedRoute"
 import MyLearnings from "./routes/dash/MyLearnings/myLearnings"
 import CourseOverview from "./routes/dash/CourseOverview/courseOverview"
-
+import UserProfile from "./routes/user-profile/UserProfile";
 
 function App() {
   return (
@@ -77,6 +77,7 @@ function App() {
             <Route path="/mylearnings" element={<MyLearnings />} />
             <Route path="/feature-selection" element={<FeatureSelection />} />
             <Route path="/contact-us" element={<ContactUsPage />} />
+            <Route path="/profile" element={<UserProfile/>} />
           </Route>
         </Routes>
       </BrowserRouter>

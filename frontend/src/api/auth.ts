@@ -1,6 +1,5 @@
 import { LoginUserTypes } from '@/types/auth-types';
 import axios from 'axios';
-import dotenv from 'dotenv';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -20,7 +19,7 @@ export async function checkMobileExists(mobile: string) {
 export async function CreateUser(values: { firstname: string; lastname: string; mobile: string; password: string }) {
   try {
     console.log("Sending values:", values);
-    const response = await axios.post(`${BASE_URL}/api/auth/signup`, values, {
+    const response = await axios.post(`${BASE_URL}/auth/signup`, values, {
       withCredentials: true,
     });
     return response.data;
@@ -33,7 +32,7 @@ export async function CreateUser(values: { firstname: string; lastname: string; 
 // ✅ Login a user
 export const LoginUser = async (data: LoginUserTypes) => {
   try {
-    const response = axios.post('http://localhost:4000/api/auth/login', data, {
+    const response = axios.post('http://localhost:3000/api/auth/login', data, {
       withCredentials: true,
     });
     return response.data;
@@ -46,7 +45,7 @@ export const LoginUser = async (data: LoginUserTypes) => {
 // ✅ Get current session
 export const GetCurrentSession = async () => {
   try {
-    const response = await axios.get('http://localhost:4000/api/session/check-session', {
+    const response = await axios.get('http://localhost:3000/api/session/check-session', {
       withCredentials: true,
     });
     return response.data;
@@ -61,7 +60,7 @@ export const GetCurrentSession = async () => {
 // ✅ Logout user
 export const LogoutUser = async () => {
   try {
-    const response = await axios.post(`${BASE_URL}/api/auth/logout`, {}, {
+    const response = await axios.post(`http://localhost:3000/api/auth/logout`, {}, {
       withCredentials: true,
     });
     return response.data;

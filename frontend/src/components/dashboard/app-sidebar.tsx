@@ -18,6 +18,7 @@ import ProfileDialog from "./profile-dialog";
 import LogoutDialog from "./logout-dialog";
 import { GoogleCalendarIcon } from "./google-calendar-icon";
 import { NotionIcon } from "./notion-icon";
+import { title } from "process";
 
 // Menu items.
 const overview = [
@@ -77,20 +78,27 @@ const community = [
     url : "/mylearnings",
     icon : Notebook
   }
-
-
 ]
+const user=[{
+  title: "Profile",
+  url: "/profile",      
+  icon: Notebook
+}]
+
 
 export function AppSidebar() {
   return (
     <Sidebar>
-        <SidebarHeader>
-            <Link to={"/"} className='flex flex-row gap-1 items-center'>
-                <img src={Logo} alt="logo" className="w-10 h-10 object-contain" />
-                <h1 className='text-xl font-semibold text-foreground tracking-tight'>Study App</h1>
-            </Link>
-        </SidebarHeader>
+      <SidebarHeader>
+        <Link to={"/"} className="flex flex-row gap-1 items-center">
+          <img src={Logo} alt="logo" className="w-10 h-10 object-contain" />
+          <h1 className="text-xl font-semibold text-foreground tracking-tight">
+            Study App
+          </h1>
+        </Link>
+      </SidebarHeader>
       <SidebarContent>
+        {/* Overview group */}
         <SidebarGroup>
           <SidebarGroupLabel>Overview</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -108,23 +116,8 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
-          {/* <SidebarGroupLabel>Application</SidebarGroupLabel> */}
-          <SidebarGroupContent>
-            {/* <SidebarMenu>
-              {app.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu> */}
-          </SidebarGroupContent>
-        </SidebarGroup>
+
+        {/* Courses group */}
         <SidebarGroup>
           <SidebarGroupLabel>COURSES</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -142,6 +135,8 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Integrations group */}
         <SidebarGroup>
           <SidebarGroupLabel>Integrations</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -159,11 +154,13 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* ✅ User Profile group added here */}
         <SidebarGroup>
-          {/* <SidebarGroupLabel>Payments</SidebarGroupLabel> */}
+          <SidebarGroupLabel>User</SidebarGroupLabel>
           <SidebarGroupContent>
-            {/* <SidebarMenu>
-              {billing.map((item) => (
+            <SidebarMenu>
+              {user.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link to={item.url}>
@@ -173,15 +170,17 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-            </SidebarMenu> */}
+            </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
       <SidebarFooter className="flex flex-row items-center gap-2">
         <ModeToggle />
         <ProfileDialog />
         <LogoutDialog />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
+

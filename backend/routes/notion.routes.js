@@ -1,10 +1,15 @@
-// routes/notion.js
-
 const express = require('express');
 const router = express.Router();
-const { testConnection,createUserStudyPlan } = require('../controllers/notion.controller');
+const notionController = require('../controllers/notion.controller');
 
-router.get('/test-notion', testConnection);
-router.post('/create-user-plan', createUserStudyPlan);
+// Redirect user to Notion's OAuth page
+router.get('/login', notionController.notionLogin);
+
+// Handle Notion's callback
+router.get('/callback', notionController.notionCallback);
+router.get('/status', notionController.checkNotionStatus);
+router.get('/select-notion-page', notionController.selectPage);
+router.post('/set-notion-page', notionController.setParentPage);
+router.get('/fetched-pages', notionController.getFetchedPages);
 
 module.exports = router;

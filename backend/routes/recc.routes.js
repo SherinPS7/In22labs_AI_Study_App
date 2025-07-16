@@ -4,6 +4,6 @@ const router = express.Router();
 const reccController = require("../controllers/recc.controller");
 
 // Route: GET /api/recommendations/:userId
-router.get("/:userId", reccController.getRecommendations);
+router.get("/", reccController.getRecommendations);
 
 module.exports = router;

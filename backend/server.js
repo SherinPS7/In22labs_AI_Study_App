@@ -92,11 +92,7 @@ sequelize.authenticate()
   .catch(err => console.error('Database connection error:', err));
    require('./utils/cleanup');
 
-// Sync models with the database
-sequelize.sync({alter: true}) // Set to true only for development alter: true force: false
-  .then(() => console.log('Database schema synced'))
-  .catch(err => console.error('Database sync error:', err));
-// ✅ Handle 404s
+
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
@@ -113,17 +109,13 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('✅ Database connected');
     
-    await sequelize.sync({ force: false });
+    await sequelize.sync({ alter: true });
     console.log('✅ Database synced');
     
     const PORT = process.env.PORT || 4000;
     app.listen(PORT, () => {
       console.log(`🚀 Listening on port ${PORT}`);
-      // console.log('📋 Available todo routes:');
-      // console.log('  GET    /api/todos');
-      // console.log('  POST   /api/todos');
-      // console.log('  PUT    /api/todos/:id');
-      // console.log('  DELETE /api/todos/:id');
+      
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
@@ -138,8 +130,3 @@ app.use((req, res) => {
 });
 
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}`);
-});
