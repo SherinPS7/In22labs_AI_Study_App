@@ -37,6 +37,7 @@ app.use('/api', routes);
 // Add todo routes specifically
 app.use('/api/todos', todoRoutes);
 // add routes for study planner
+app.use('/api/study-plans', studyPlanRoutes);
 
 
 

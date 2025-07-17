@@ -261,6 +261,51 @@ const studyPlanController = {
     }
   },
 
+
+  // GET /api/study-plans/:id/course-progress
+getStudyPlanVideoProgress: async (req, res) => {
+  try {
+    const { id } = req.params; // planId
+    const plan = await StudyPlan.findByPk(id);
+
+    if (!plan) {
+      return res.status(404).json({ error: 'Study Plan not found' });
+    }
+
+    console.log('plan.course_ids:', plan.course_ids);
+    console.log('plan.course_settings:', plan.course_settings);
+
+    const courseIds = Array.isArray(plan.course_ids) ? plan.course_ids : JSON.parse(plan.course_ids);
+    const courseSettings = typeof plan.course_settings === 'object' 
+      ? plan.course_settings 
+      : JSON.parse(plan.course_settings);
+
+    const courses = await Course.findAll({
+      where: { id: courseIds },
+      include: { association: 'Videos' } // Make sure your model associations are set
+    });
+
+    const result = courses.map(course => {
+      const videos = course.Videos || [];
+      const watched = videos.filter(video => video.video_progress).length;
+      const total = videos.length;
+
+      return {
+        courseId: course.id,
+        courseName: course.course_name,
+        totalVideos: total,
+        watchedVideos: watched,
+        settings: courseSettings[course.id] || {}
+      };
+    });
+
+    res.json({ planName: plan.plan_name, progress: result });
+  } catch (error) {
+    console.error('Error fetching study plan video progress:', error);
+    res.status(500).json({ error: 'Failed to fetch progress' });
+  }
+},
+
   // NEW METHOD: GET /api/study-plans/:id/with-courses - Get study plan with full course details
   getStudyPlanWithCourses: async (req, res) => {
     try {

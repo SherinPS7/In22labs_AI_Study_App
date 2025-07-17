@@ -16,6 +16,16 @@ export const useStudyPlan = (userId = 1) => {
     weekdays: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].reduce((acc, d) => ({ ...acc, [d]: true }), {})
   });
 
+  const getPlanStatus = (startDate, endDate) => {
+    const now = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (now < start) return 'upcoming';
+    if (now > end) return 'completed';
+    return 'active';
+  };
+
   // State management
   const [plans, setPlans] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -31,42 +41,71 @@ export const useStudyPlan = (userId = 1) => {
 
   useEffect(() => {
     fetchPlans();
-    // Initialize with sample data for demo
-    if (studyLogs.length === 0) {
-      const sampleLogs = [
-        { date: new Date().toISOString().split('T')[0], minutesStudied: 0, completed: false },
-        { date: new Date(Date.now() - 24*60*60*1000).toISOString().split('T')[0], minutesStudied: 90, completed: true },
-        { date: new Date(Date.now() - 2*24*60*60*1000).toISOString().split('T')[0], minutesStudied: 60, completed: true },
-      ];
-      setStudyLogs(sampleLogs);
-      setTodayStudied(0);
-    }
+    fetchStudyLogs(); 
   }, [userId]);
 
+  useEffect(() => {
+    if (plans.length > 0) {
+      const active = plans.find(plan => 
+        getPlanStatus(plan.start_date, plan.end_date) === 'active'
+      );
+      setActivePlan(active || null);
+    }
+  }, [plans]);
   // Fetch all plans for the user
-  const fetchPlans = async () => {
+ const fetchPlans = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    console.log('Fetching plans for user:', userId);
+    const data = await getAllStudyPlans(userId);
+    console.log('API Response:', data);
+    
+    const plansArray = data.plans || data.studyPlans || data || [];
+    console.log('Plans array:', plansArray);
+    
+    setPlans(plansArray);
+    
+    // Find and set active plan AFTER plans are loaded
+    const active = plansArray.find(plan => 
+      getPlanStatus(plan.start_date, plan.end_date) === 'active'
+    );
+    setActivePlan(active || null);
+    
+    setError('');
+  } catch (err) {
+    console.error('Error fetching plans:', err);
+    setError('Failed to fetch plans: ' + err.message);
+    setActivePlan(null); // Ensure activePlan is null on error
+  } finally {
+    setLoading(false);
+  }
+};
+
+const fetchStudyLogs = async () => {
     try {
-      setLoading(true);
-      console.log('Fetching plans for user:', userId);
-      const data = await getAllStudyPlans(userId);
-      console.log('API Response:', data);
-      
-      const plansArray = data.plans || data.studyPlans || data || [];
-      console.log('Plans array:', plansArray);
-      
-      setPlans(plansArray);
-      
-      const active = plansArray.find(p => new Date(p.end_date) >= new Date()) || plansArray[0];
-      setActivePlan(active);
-      
-      setError('');
+      // Use localStorage to persist study logs between page refreshes
+      const savedLogs = localStorage.getItem(`studyLogs_${userId}`);
+      if (savedLogs) {
+        const logs = JSON.parse(savedLogs);
+        setStudyLogs(logs);
+        
+        // Calculate today's studied time from actual logs
+        const today = new Date().toISOString().split('T')[0];
+        const todayLog = logs.find(log => log.date === today);
+        setTodayStudied(todayLog ? todayLog.minutesStudied : 0);
+      } else {
+        // Initialize with empty array if no saved logs
+        setStudyLogs([]);
+        setTodayStudied(0);
+      }
     } catch (err) {
-      console.error('Error fetching plans:', err);
-      setError('Failed to fetch plans: ' + err.message);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching study logs:', err);
+      setStudyLogs([]);
+      setTodayStudied(0);
     }
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -198,23 +237,28 @@ export const useStudyPlan = (userId = 1) => {
         planId: activePlan?.id
       };
       
+      let updatedLogs;
       if (existingLogIndex >= 0) {
-        const updatedLogs = [...studyLogs];
+        updatedLogs = [...studyLogs];
         updatedLogs[existingLogIndex] = {
           ...updatedLogs[existingLogIndex],
           minutesStudied: updatedLogs[existingLogIndex].minutesStudied + minutes,
           completed: (updatedLogs[existingLogIndex].minutesStudied + minutes) >= (activePlan?.study_time || 60)
         };
-        setStudyLogs(updatedLogs);
       } else {
-        setStudyLogs([...studyLogs, newLog]);
+        updatedLogs = [...studyLogs, newLog];
       }
       
+      setStudyLogs(updatedLogs);
       setTodayStudied(prev => prev + minutes);
+      
+      // IMPORTANT: Save to localStorage to persist data
+      localStorage.setItem(`studyLogs_${userId}`, JSON.stringify(updatedLogs));
+      
       setSuccess(`Added ${minutes} minutes to today's study log!`);
     }
   };
-
+  
   return {
     // State
     planForm,
@@ -228,7 +272,6 @@ export const useStudyPlan = (userId = 1) => {
     studyLogs,
     todayStudied,
     
-    // Actions
     setPlanForm,
     setShowCreateForm,
     setError,
@@ -239,6 +282,7 @@ export const useStudyPlan = (userId = 1) => {
     startEdit,
     handleToggleDay,
     addStudySession,
-    fetchPlans
+    fetchPlans,
+    fetchStudyLogs 
   };
 };

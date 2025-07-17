@@ -8,7 +8,7 @@ import { Planner } from "@/routes/dash/planner";
 import ContinueLearning from "../../../src/routes/dash/continue-reading";
 import StartLearning from "../../../src/routes/dash/start-learning";
 import Footer from "@/components/footer/footer";
-import { Plus, Calendar, Clock, BookOpen, Target, TrendingUp, Flame, Trophy, Edit, Trash2 } from 'lucide-react';
+import { Plus, Calendar, Clock, BookOpen, Target, TrendingUp, Flame, Trophy, Edit, Trash2, BarChart } from 'lucide-react';
 import SearchBar from "./Overview/searchbar"
 
 interface StudyPlan {
@@ -73,10 +73,24 @@ const Overview = ({ userId = 1 }) => {
       handleClosePopup();
   };
 
+  const handleViewProgress = async (planId, planName) => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/study-plans/${planId}/course-progress`);
+      const data = await response.json();
+      setSelectedProgress({ ...data, planName });
+      setShowProgressModal(true);
+    } catch (error) {
+      console.error('Failed to fetch progress', error);
+      setError('Failed to load progress');
+    }
+  };
+
   const [searchResults, setSearchResults] = useState([]);
+  const [selectedProgress, setSelectedProgress] = useState(null);
+  const [showProgressModal, setShowProgressModal] = useState(false);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 xl:max-w-screen-xl"> {/* Added xl:max-w-screen-xl */}
+    <div className="w-full px-4 py-4 sm:px-6 lg:px-8"> {/* Added xl:max-w-screen-xl */}
       {/* Header Section */}
       <main className="flex flex-col md:flex-row items-center justify-between gap-4 w-full mb-6">
         {/* Welcome Message */}
@@ -114,143 +128,156 @@ const Overview = ({ userId = 1 }) => {
         </div>
       )}
 
-      {/* Study Progress Section */}
-      <Card className="mb-6 bg-gray shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex flex-col md:flex-row items-center justify-between text-lg md:text-xl">
-            <div className="flex items-center mb-2 md:mb-0">
-              <TrendingUp className="w-5 h-5 mr-2" />
-              Your Progress
+
+{/* Study Progress Section */}
+<Card className="mb-6 bg-gray shadow-lg">
+  <CardHeader>
+    <CardTitle className="flex flex-col md:flex-row items-center justify-between text-lg md:text-xl">
+      <div className="flex items-center mb-2 md:mb-0">
+        <TrendingUp className="w-5 h-5 mr-2" />
+        Your Progress
+      </div>
+      <button
+        onClick={addStudySession}
+        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+      >
+        + Log Study Time
+      </button>
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+
+    
+    {/* Today's Progress */}
+{loading ? (
+  <div className="bg-gray shadow-lg rounded-lg p-6 mb-4">
+    <div className="text-center py-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+      <p className="text-gray-500 mt-2">Loading study plans...</p>
+    </div>
+  </div>
+) : activePlan ? (
+  <div className="bg-gray shadow-lg rounded-lg p-6 mb-4">
+    <div className="text-center mb-4">
+      <h3 className="text-lg font-medium text-gray-700 mb-1">
+        Today's Goal - {activePlan.plan_name}
+      </h3>
+      <div className="flex justify-center text-gray-600 text-sm mb-2">
+        <span className="font-mono">{metrics.todayStudied} min / {metrics.todayTarget} min</span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-3">
+        <div
+          className="bg-green-500 rounded-full h-3 transition-all duration-300"
+          style={{ width: `${Math.min(metrics.todayProgress, 100)}%` }}
+        />
+      </div>
+      <p className="text-xs text-gray-500 mt-1">
+        {metrics.todayProgress >= 100 ? '🎉 Goal completed!' : `${Math.round(metrics.todayProgress)}% complete`}
+      </p>
+    </div>
+  </div>
+) : (
+  <div className="bg-gray shadow-lg rounded-lg p-6 mb-4">
+    <div className="text-center py-8 text-gray-500">
+      <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+      <p className="text-lg font-medium mb-1">No Active Study Plan</p>
+      <p className="text-sm">Create a study plan to start tracking your daily goals!</p>
+      <button
+        onClick={handleCreatePlan}
+        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        Create Study Plan
+      </button>
+    </div>
+  </div>
+)}
+
+    {/* Simplified Stats - Just Streaks and Login Time */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      {/* Streak Card */}
+      <div className="bg-gray shadow-lg rounded-lg p-6">
+        <div className="text-center">
+          <div className="bg-orange-100 p-3 rounded-full mx-auto mb-3 w-fit">
+            <Flame className="w-6 h-6 text-orange-500" />
+          </div>
+          <p className="text-sm text-white-500 mb-1">Current Streak</p>
+          <p className="text-3xl font-bold text-white-800 mb-2">{metrics.currentStreak}</p>
+          <p className="text-xs text-white-400">days</p>
+          
+          {/* Best Streak */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-center gap-2">
+              <Trophy className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm text-green-600">Best: {metrics.bestStreak} days</span>
             </div>
-            <button
-              onClick={addStudySession}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+          </div>
+        </div>
+      </div>
+
+      {/* Login Time / Session Stats */}
+      <div className="bg-gray shadow-lg rounded-lg p-6">
+        <div className="text-center">
+          <div className="bg-blue-100 p-3 rounded-full mx-auto mb-3 w-fit">
+            <Clock className="w-6 h-6 text-blue-500" />
+          </div>
+          <p className="text-sm text-white-500 mb-1">Today's Study Time</p>
+          <p className="text-3xl font-bold text-white-800 mb-2">{metrics.todayStudied}</p>
+          <p className="text-xs text-white-400">minutes</p>
+          
+          {/* Status indicator */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <p className="text-sm text-center">
+              {metrics.todayProgress >= 100 ? (
+                <span className="text-green-600 font-medium">✅ Goal achieved!</span>
+              ) : (
+                <span className="text-blue-600 font-medium">
+                  {metrics.todayTarget - metrics.todayStudied} min remaining
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Simple Last 7 Days Visualization */}
+    <div className="bg-gray shadow-lg rounded-lg p-6">
+      <h3 className="font-medium mb-3 flex items-center justify-center">
+        <Calendar className="w-4 h-4 mr-2" />
+        Last 7 Days
+      </h3>
+      <div className="flex justify-center gap-2">
+        {metrics.last7Days.map((day, idx) => (
+          <div key={idx} className="flex flex-col items-center">
+            <div
+              className={`${
+                day.studied ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+              } w-10 h-10 flex items-center justify-center rounded-full mb-1 text-sm font-medium`}
             >
-              + Log Study Time
-            </button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Today's Progress */}
-          {activePlan && (
-            <div className="bg-gray shadow-lg rounded-lg p-6 mb-4">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-medium text-gray-700 mb-1">
-                  Today's Goal - {activePlan.plan_name}
-                </h3>
-                <div className="flex justify-center text-gray-600 text-sm mb-2">
-                  <span className="font-mono">{metrics.todayStudied} min / {metrics.todayTarget} min</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-green-500 rounded-full h-3 transition-all duration-300"
-                    style={{ width: `${Math.min(metrics.todayProgress, 100)}%` }}
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {metrics.todayProgress >= 100 ? '🎉 Goal completed!' : `${Math.round(metrics.todayProgress)}% complete`}
-                </p>
-              </div>
+              {day.studied ? '✓' : '○'}
             </div>
+            <span className="text-xs text-gray-600">{day.date}</span>
+          </div>
+        ))}
+      </div>
+      
+      {/* Streak motivation */}
+      <div className="text-center mt-4 pt-4 border-t border-gray-200">
+        <p className="text-sm text-gray-600">
+          {metrics.currentStreak > 0 ? (
+            <span className="text-orange-600 font-medium">
+              🔥 {metrics.currentStreak} day streak! Keep it going!
+            </span>
+          ) : (
+            <span className="text-gray-500">
+              Start your streak today! 💪
+            </span>
           )}
-
-          {/* Streak and Stats */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mb-4"> {/* Added xl:grid-cols-3 */}
-            {/* Streak Card */}
-            <div className="bg-gray shadow-lg rounded-lg p-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center">
-                  <div className="bg-orange-100 p-2 rounded-full mr-3">
-                    <Flame className="w-5 h-5 text-orange-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Current Streak</p>
-                    <p className="text-2xl font-bold">{metrics.currentStreak}d</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <Trophy className="w-5 h-5 text-yellow-500 mr-2" />
-                  <div>
-                    <p className="text-sm text-gray-500">Best</p>
-                    <p className="text-xl font-medium">{metrics.bestStreak}d</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <p className="text-green-600 font-medium">
-                  {metrics.currentStreak > 0 ? `🔥 ${metrics.currentStreak} day streak!` : 'Start your streak today!'}
-                </p>
-              </div>
-            </div>
-
-            {/* Weekly Stats */}
-            <div className="bg-gray shadow-lg rounded-lg p-6">
-              <div className="flex items-center mb-3">
-                <Clock className="w-5 h-5 text-blue-500 mr-2" />
-                <h3 className="font-medium">This Week</h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Total Time:</span>
-                  <span className="font-medium">{Math.floor(metrics.weeklyTotalMinutes / 60)}h {metrics.weeklyTotalMinutes % 60}m</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Days Studied:</span>
-                  <span className="font-medium">{metrics.weeklyDaysStudied}/7</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Daily Average:</span>
-                  <span className="font-medium">{metrics.weeklyAverage}min</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Monthly Goal - Moved here for better layout on large screens */}
-            <div className="bg-gray shadow-lg rounded-lg p-6 lg:col-span-1 xl:col-span-1"> {/* Adjusted col-span */}
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-medium flex items-center">
-                  <Target className="w-4 h-4 mr-2" />
-                  Monthly Goal
-                </h3>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                <div
-                  className="bg-blue-500 rounded-full h-2 transition-all duration-300"
-                  style={{ width: `${Math.min((metrics.weeklyDaysStudied / 20) * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-600 text-center">
-                {Math.round((metrics.weeklyDaysStudied / 20) * 100)}% of monthly goal achieved
-              </p>
-            </div>
-          </div>
-
-          {/* Last 7 Days - Now separate for better control */}
-          <div className="grid grid-cols-1"> {/* Simplified to always be 1 column for its specific content */}
-            <div className="bg-gray shadow-lg rounded-lg p-6">
-              <h3 className="font-medium mb-3 flex items-center">
-                <Calendar className="w-4 h-4 mr-2" />
-                Last 7 Days
-              </h3>
-              <div className="flex justify-between gap-1 overflow-x-auto pb-2">
-                {metrics.last7Days.map((day, idx) => (
-                  <div key={idx} className="flex flex-col items-center flex-shrink-0 w-1/7">
-                    <div
-                      className={`${
-                        day.studied ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
-                      } w-8 h-8 flex items-center justify-center rounded-full mb-1 text-xs font-medium`}
-                    >
-                      {day.studied ? '✓' : '○'}
-                    </div>
-                    <span className="text-xs text-gray-600">{day.date}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </p>
+      </div>
+    </div>
+  </CardContent>
+</Card>
 
       {/* Study Plan Management Section */}
       <Card className="mb-6 bg-gray shadow-lg">
@@ -309,6 +336,12 @@ const Overview = ({ userId = 1 }) => {
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        <button
+                        onClick={() => handleViewProgress(plan.id, plan.plan_name)}
+                        className="p-1 text-green-600 hover:bg-green-100 rounded"
+                      >
+                        <BarChart className="w-4 h-4" />
+                      </button>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm text-gray-600">
@@ -347,6 +380,47 @@ const Overview = ({ userId = 1 }) => {
         setError={setError}
         onPlanUpdate={handlePlanUpdate}
       />
+
+{showProgressModal && selectedProgress && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-black rounded-lg shadow-lg p-6 max-w-2xl w-full relative">
+      <button
+        className="absolute top-2 right-2 text-gray-500 hover:text-black"
+        onClick={() => setShowProgressModal(false)}
+      >
+        ✕
+      </button>
+      <h2 className="text-xl font-bold mb-4">
+        Progress for: {selectedProgress.planName}
+      </h2>
+
+      {selectedProgress.progress.length === 0 ? (
+        <p>No progress data available.</p>
+      ) : (
+        <div className="space-y-4">
+          {selectedProgress.progress.map((course) => (
+            <div key={course.courseId} className="border rounded p-4">
+              <h3 className="font-semibold">{course.courseName}</h3>
+              <p className="text-sm mb-2">
+                Watched: {course.watchedVideos} / {course.totalVideos}
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-green-500 h-3 rounded-full"
+                  style={{ width: `${(course.watchedVideos / course.totalVideos) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-xs mt-2 text-gray-500">
+                Daily: {course.settings?.daily_hours || 0} hr(s), Days: {course.settings?.study_days?.join(', ') || 'N/A'}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
 
       {/* Planner Section */}
       <Card className="mb-6 bg-gray shadow-lg">
