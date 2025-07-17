@@ -110,22 +110,37 @@ const studyPlanController = {
 
 
   // GET /api/study-plans/:id
-  getStudyPlanById: async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      const studyPlan = await StudyPlan.findByPk(id);
-      
-      if (!studyPlan) {
-        return res.status(404).json({ error: 'Study plan not found' });
-      }
-      
-      res.json({ studyPlan });
-    } catch (error) {
-      console.error('Error fetching study plan:', error);
-      res.status(500).json({ error: 'Failed to fetch study plan' });
+getStudyPlanById: async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.session.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: No session' });
     }
-  },
+
+    if (isNaN(Number(id))) {
+      return res.status(400).json({ error: 'Invalid study plan ID' });
+    }
+
+    const studyPlan = await StudyPlan.findOne({
+      where: {
+        id,
+        user_id_foreign_key: userId
+      }
+    });
+
+    if (!studyPlan) {
+      return res.status(404).json({ error: 'Study plan not found or access denied' });
+    }
+
+    res.json(studyPlan); // or res.json({ studyPlan }) based on your API pattern
+  } catch (error) {
+    console.error('Error fetching study plan:', error);
+    res.status(500).json({ error: 'Failed to fetch study plan' });
+  }
+}
+,
 
   // PUT /api/study-plans/:id - UPDATED to handle course_ids and course_settings
   updateStudyPlan: async (req, res) => {
@@ -316,3 +331,4 @@ const studyPlanController = {
 };
 
 module.exports = studyPlanController;
+//http://localhost:3000/api/studyplan/study-plans?userId=8
