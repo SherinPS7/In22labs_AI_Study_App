@@ -28,6 +28,8 @@ db.GroupFile = require('./GroupFile')(sequelize, DataTypes);
 db.GroupMessage = require('./GroupMessage')(sequelize, DataTypes);
 db.NotionToken = require('./NotionToken')(sequelize, DataTypes);
 // Set up associations - with proper error checking
+db.Follow = require('./follow')(sequelize, DataTypes);
+db.FollowRequest = require('./FollowRequest')(sequelize, DataTypes);
 Object.keys(db).forEach(modelName => {
   // Skip Sequelize and sequelize properties, and check if associate function exists
   if (modelName !== 'Sequelize' && modelName !== 'sequelize' && db[modelName] && typeof db[modelName].associate === 'function') {
@@ -35,21 +37,22 @@ Object.keys(db).forEach(modelName => {
   }
 });
 
-// TEMPORARY: Comment out all manual associations to debug
-// Debug: Check what each model actually is before setting up associations
-console.log('=== MODELS DEBUG ===');
-Object.keys(db).forEach(key => {
-  if (key !== 'Sequelize' && key !== 'sequelize') {
-    console.log(`${key}:`, !!db[key], typeof db[key], db[key]?.name);
-    if (db[key] && typeof db[key].hasMany === 'function') {
-      console.log(`  ${key} has hasMany method`);
-    }
-    if (db[key] && typeof db[key].belongsTo === 'function') {
-      console.log(`  ${key} has belongsTo method`);
-    }
-  }
-});
-console.log('=== END DEBUG ===');
+
+// // TEMPORARY: Comment out all manual associations to debug
+// // Debug: Check what each model actually is before setting up associations
+// console.log('=== MODELS DEBUG ===');
+// Object.keys(db).forEach(key => {
+//   if (key !== 'Sequelize' && key !== 'sequelize') {
+//     console.log(`${key}:`, !!db[key], typeof db[key], db[key]?.name);
+//     if (db[key] && typeof db[key].hasMany === 'function') {
+//       console.log(`  ${key} has hasMany method`);
+//     }
+//     if (db[key] && typeof db[key].belongsTo === 'function') {
+//       console.log(`  ${key} has belongsTo method`);
+//     }
+//   }
+// });
+// console.log('=== END DEBUG ===');
 
 // COMMENTED OUT FOR DEBUGGING - UNCOMMENT ONCE MODELS ARE WORKING
 /*

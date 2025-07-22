@@ -18,8 +18,9 @@ import ProfileDialog from "./profile-dialog";
 import LogoutDialog from "./logout-dialog";
 import { GoogleCalendarIcon } from "./google-calendar-icon";
 import { NotionIcon } from "./notion-icon";
-import { title } from "process";
-
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { User } from "lucide-react"; // Add User icon
 // Menu items.
 const overview = [
   {
@@ -34,23 +35,23 @@ const overview = [
   },
 ];
 
-const app = [
-    {
-      title : "Learn",
-      url : "/learn",
-      icon : Book
-    },
-    {
-      title : "Schedule",
-      url : "/schedule",
-      icon : Hourglass
-    },
-    {
-        title : "Tests",
-        url : "/rooms",
-        icon : NotebookPen
-    }
-];
+// const app = [
+//     {
+//       title : "Learn",
+//       url : "/learn",
+//       icon : Book
+//     },
+//     {
+//       title : "Schedule",
+//       url : "/schedule",
+//       icon : Hourglass
+//     },
+//     {
+//         title : "Tests",
+//         url : "/rooms",
+//         icon : NotebookPen
+//     }
+// ];
 
 const integrations = [
     {
@@ -84,14 +85,30 @@ const community = [
     icon : Notebook
   }
 ]
-const user=[{
+const user = [{
   title: "Profile",
-  url: "/profile",      
-  icon: Notebook
-}]
+  url: "/profile/", // Note the trailing slash
+  icon: User // Changed from Notebook to User
+}];
 
 
 export function AppSidebar() {
+  const [userId, setUserId] = useState<number | null>(null);
+  useEffect(() => {
+  const fetchUserId = async () => {
+    try {
+      const res = await axios.get("http://localhost:3000/api/session/check-session", {
+        withCredentials: true,
+      });
+      const id = res.data?.user?.userId; // ✅ Fix: use userId, not id
+      setUserId(id ?? null);
+    } catch (error) {
+      console.error("Failed to fetch user session:", error);
+    }
+  };
+  fetchUserId();
+}, []);
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -160,24 +177,26 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* ✅ User Profile group added here */}
-        <SidebarGroup>
-          <SidebarGroupLabel>User</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {user.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+       {/* User Profile group */}
+{userId && (
+  <SidebarGroup>
+    <SidebarGroupLabel>ACCOUNT</SidebarGroupLabel> {/* Changed from "User" to "ACCOUNT" */}
+    <SidebarGroupContent>
+      <SidebarMenu>
+        {user.map((item) => (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton asChild>
+              <Link to={`${item.url}${userId}`}> {/* Append user ID */}
+                <item.icon />
+                <span>{item.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+      </SidebarMenu>
+    </SidebarGroupContent>
+  </SidebarGroup>
+)}
       </SidebarContent>
 
       <SidebarFooter className="flex flex-row items-center gap-2">
