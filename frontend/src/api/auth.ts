@@ -6,7 +6,7 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 // ✅ Check if mobile exists (during signup)
 export async function checkMobileExists(mobile: string) {
   try {
-    const response = await axios.post(`${BASE_URL}/api/auth/check-mobile`, { mobile }, {
+    const response = await axios.post(`${BASE_URL}/auth/check-mobile`, { mobile }, {
       withCredentials: true,
     });
     return response.data;
@@ -32,7 +32,7 @@ export async function CreateUser(values: { firstname: string; lastname: string; 
 // ✅ Login a user
 export const LoginUser = async (data: LoginUserTypes) => {
   try {
-    const response = axios.post('http://localhost:3000/api/auth/login', data, {
+    const response = await axios.post(`${BASE_URL}/auth/login`, data, {
       withCredentials: true,
     });
     return response.data;
@@ -45,7 +45,7 @@ export const LoginUser = async (data: LoginUserTypes) => {
 // ✅ Get current session
 export const GetCurrentSession = async () => {
   try {
-    const response = await axios.get('http://localhost:3000/api/session/check-session', {
+    const response = await axios.get(`${BASE_URL}/session/check-session`, {
       withCredentials: true,
     });
     return response.data;
@@ -73,7 +73,7 @@ export const LogoutUser = async () => {
 // ✅ Check mobile for forgot password flow
 export async function checkMobileForReset(mobile: string) {
   try {
-    const response = await axios.post(`${BASE_URL}/api/auth/forgot/check-mobile`, { mobile }, {
+    const response = await axios.post(`${BASE_URL}/auth/forgot/check-mobile`, { mobile }, {
       withCredentials: true,
     });
     return response.data;
@@ -85,7 +85,7 @@ export async function checkMobileForReset(mobile: string) {
 // ✅ Reset password
 export const resetPassword = async (mobile: string, newPassword: string) => {
   try {
-    const response = await axios.post(`${BASE_URL}/api/auth/reset-password`, {
+    const response = await axios.post(`${BASE_URL}/auth/reset-password`, {
       mobile,
       newPassword,
     }, {

@@ -23,6 +23,9 @@ db.QuizAttempt = require('./QuizAttempt')(sequelize, DataTypes);
 db.StudyProgress = require('./StudyProgress')(sequelize, DataTypes);
 db.Group = require('./group')(sequelize, DataTypes);
 db.GroupMember = require('./GroupMember')(sequelize, DataTypes);
+db.GroupJoinRequest = require('./GroupJoinRequest')(sequelize, DataTypes);
+db.GroupFile = require('./GroupFile')(sequelize, DataTypes);
+db.GroupMessage = require('./GroupMessage')(sequelize, DataTypes);
 db.NotionToken = require('./NotionToken')(sequelize, DataTypes);
 // Set up associations - with proper error checking
 Object.keys(db).forEach(modelName => {

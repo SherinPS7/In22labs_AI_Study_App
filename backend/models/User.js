@@ -47,7 +47,15 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.AssessmentScore, { foreignKey: 'user_id_foreign_key' });
     User.hasMany(models.ToDoList, { foreignKey: 'user_id_foreign_key' });
     User.hasMany(models.StudyPlan, { foreignKey: 'user_id_foreign_key' });
+ 
+     User.hasMany(models.Group, { foreignKey: 'created_by' }); // Groups created by this user
+    User.hasMany(models.GroupMember, { foreignKey: 'user_id' }); // Memberships
+    User.hasMany(models.GroupJoinRequest, { foreignKey: 'user_id' }); // Join requests
+    User.hasMany(models.GroupMessage, { foreignKey: 'sender_id' }); // Messages sent
+    User.hasMany(models.GroupFile, { foreignKey: 'user_id' }); // Files uploaded
+
   };
+
 
   return User;
 };

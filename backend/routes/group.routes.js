@@ -1,46 +1,45 @@
-// const express = require('express');
-// const router = express.Router();
-// const GroupController = require('../controllers/group.controller');
-
-// // POST /api/group/create
-// router.post('/create', GroupController.createGroup);
-
-// // POST /api/group/join
-// router.post('/join', GroupController.joinGroup);
-// router.get('/:groupId/members', GroupController.getGroupMembers);
-// router.get('/:groupId/leaderboard', GroupController.getGroupLeaderboard);
-// router.post('/leave', GroupController.leaveGroup);
-// // ✅ New
-// router.get('/mystatus', GroupController.getMyGroupStatus);
-// router.post('/sync', GroupController.resyncStudyPlanFromGroup);
 // module.exports = router;
 const express = require('express');
 const router = express.Router();
-const GroupController = require('../controllers/group.controller');
+const groupController = require('../controllers/group.controller');
+const uploadPDF = require('../middleware/pdfUpload'); // PDF-only multer setup
 
-// ✅ Create a group
-router.post('/create', GroupController.createGroup);
+// ---- Group Core Management ----
 
-// ✅ Join group by code
-router.post('/join', GroupController.joinGroup);
+// Create a new group
+router.post('/create', groupController.createGroup);
+router.get('/mygroups', groupController.getMyGroups);
 
-// ✅ Share selected plans to group (admin only)
-router.post('/add-plan', GroupController.addPlansToGroup);
+// Request to join a group using join code
+router.post('/request-join', groupController.requestToJoinGroup);
 
-// ✅ Get current group and study plan
-router.get('/mystatus', GroupController.getMyGroupStatus);
+// Get all join requests (Admin-only route)
+router.get('/:groupId/requests', groupController.getJoinRequests);
 
-// ✅ Resync current user's study plan from admin
-router.post('/resync', GroupController.resyncStudyPlanFromGroup);
+// Approve a specific join request
+router.post('/:groupId/requests/:requestId/approve', groupController.approveJoinRequest);
 
-// ✅ Get group leaderboard (based on completed study)
-router.get('/leaderboard/:groupId', GroupController.getGroupLeaderboard);
+// Reject a join request
+router.delete('/requests/:requestId/reject', groupController.rejectJoinRequest);
 
-// ✅ Get all members of a group
-router.get('/members/:groupId', GroupController.getGroupMembers);
+// Get all members in a group
+router.get('/:groupId/members', groupController.getGroupMembers);
 
-// ✅ Leave group
-router.post('/leave', GroupController.leaveGroup);
-router.get('/mygroups', GroupController.getMyGroups);
+// Remove a member (Admin-only)
+router.delete('/:groupId/members/:userId/remove', groupController.removeMember);
+
+
+// ---- Group Chat & File Uploads ----
+
+// Get all messages in a group
+router.get('/:groupId/messages', groupController.getGroupMessages);
+
+// Send a group message (text or PDF) - with multer middleware
+router.post('/:groupId/message', uploadPDF.single('file'), groupController.sendGroupMessage);
+
+// Optional: Upload only PDF without sending as message (optional utility)
+router.post('/:groupId/upload-pdf', uploadPDF.single('pdf'), groupController.uploadPDFToGroup);
+router.post('/leave', groupController.leaveGroup);
+router.delete("/:groupId", groupController.deleteGroup);
 
 module.exports = router;
