@@ -30,5 +30,5 @@ router.use('/registered-courses', require('./studyPlan.routes'));
 router.use('/group', require('./group.routes'));
 router.use('/notion', require('./notion.routes'));
 router.use('/profile', require('./userProfile.routes'));
-
+router.use('/search', require('./search.routes'));
 module.exports = router;

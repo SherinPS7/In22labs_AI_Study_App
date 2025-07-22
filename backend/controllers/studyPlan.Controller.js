@@ -301,32 +301,40 @@ getStudyPlanById: async (req, res) => {
 
   // NEW METHOD: GET /api/study-plans/:id/with-courses - Get study plan with full course details
   getStudyPlanWithCourses: async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      const studyPlan = await StudyPlan.findByPk(id);
-      
-      if (!studyPlan) {
-        return res.status(404).json({ error: 'Study plan not found' });
-      }
-      
-      const planData = studyPlan.toJSON();
-      
-      // If plan has course_ids, fetch course details
-      if (planData.course_ids && planData.course_ids.length > 0) {
-        const courseDetails = await Course.findAll({
-          where: { id: planData.course_ids },
-          attributes: ['id', 'course_name', 'description', 'duration_weeks', 'createdAt']
-        });
-        
-        planData.course_details = courseDetails;
-      }
-      
-      res.json({ studyPlan: planData });
-    } catch (error) {
-      console.error('Error fetching study plan with courses:', error);
-      res.status(500).json({ error: 'Failed to fetch study plan with courses' });
+  try {
+    const { id } = req.params;
+
+    const studyPlan = await StudyPlan.findByPk(id);
+
+    if (!studyPlan) {
+      return res.status(404).json({ error: 'Study plan not found' });
     }
+
+    const planData = studyPlan.toJSON();
+
+    // If plan has course_ids, fetch course details
+    if (planData.course_ids && planData.course_ids.length > 0) {
+      const courseDetails = await Course.findAll({
+        where: { id: planData.course_ids },
+        attributes: [
+          'id',
+          'course_name',
+          'user_id_foreign_key',
+          'ref_course_id',
+          'notion_template_db_id'
+          // Add more fields here if they exist in your model
+        ]
+      });
+
+      planData.course_details = courseDetails;
+    }
+
+    res.json({ studyPlan: planData });
+  } catch (error) {
+    console.error('Error fetching study plan with courses:', error);
+    res.status(500).json({ error: 'Failed to fetch study plan with courses' });
+  }
+
   }
 };
 

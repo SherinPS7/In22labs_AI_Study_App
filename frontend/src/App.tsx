@@ -31,8 +31,9 @@ import ScrollToTop from "./utils/scrollToTop"
 import ProtectedRoute from "./components/auth/ProtectedRoute"
 import MyLearnings from "./routes/dash/MyLearnings/myLearnings"
 import CourseOverview from "./routes/dash/CourseOverview/courseOverview"
-import UserProfile from "./routes/user-profile/UserProfile";
-
+import UserProfile from "./routes/dash/user-profile/UserProfile";
+import { Toaster } from "sonner"; 
+import StudyPlanDetail from "./routes/dash/Overview/StudyPlanDetail";
 function App() {
   return (
     <>
@@ -81,10 +82,14 @@ function App() {
             <Route path="/contact-us" element={<ContactUsPage />} />
             <Route path="/groups" element={<GroupLanding />} />
             <Route path="/group/:id" element={<GroupDetails />} />
-            <Route path="/profile" element={<UserProfile/>} />
+            <Route path="/profile/:userId" element={<UserProfile/>} />
+            <Route path="/studyplan/:id" element={<StudyPlanDetail/>}/>
           </Route>
         </Routes>
       </BrowserRouter>
+
+
+      <Toaster position="top-right" richColors />
     </>
   )
 }

@@ -11,6 +11,8 @@ import Footer from '@/components/footer/footer';
 import { Plus, Calendar, Clock, Target, TrendingUp, Flame, Trophy, Edit, Trash2 } from 'lucide-react';
 import SearchBar from './Overview/searchbar';
 import axios from 'axios';
+import { Share2} from "lucide-react";
+import { toast } from "sonner";
 
 interface StudyPlan {
   id: number;
@@ -318,51 +320,81 @@ const Overview = () => {
             </div>
           ) : (
             <div className="space-y-4">
+              
               {plans.map((plan) => {
-                const status = getPlanStatus(plan.start_date, plan.end_date);
-                return (
-                  <div key={plan.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
-                      <h3 className="text-lg font-semibold text-white-800 mb-2 md:mb-0">{plan.plan_name}</h3>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditPlan(plan)}
-                          className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                          aria-label="Edit plan"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(plan.id)}
-                          className="p-1 text-red-600 hover:bg-red-100 rounded"
-                          aria-label="Delete plan"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm text-gray-600">
-                      <div>
-                        <p><strong>Duration:</strong> {formatDate(plan.start_date)} - {formatDate(plan.end_date)}</p>
-                        <p><strong>Daily Study Time:</strong> {plan.study_time} minutes</p>
-                      </div>
-                      <div>
-                        <p><strong>Study Days:</strong> {Array.isArray(plan.weekdays) ? plan.weekdays.join(', ') : 'N/A'}</p>
-                        <p>
-                          <strong>Status:</strong>
-                          <span className={`ml-1 px-2 py-1 rounded text-xs ${
-                            status === 'active' ? 'bg-green-100 text-green-800' :
-                            status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>
-                            {status === 'active' ? 'Active' : status === 'upcoming' ? 'Upcoming' : 'Completed'}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+  const status = getPlanStatus(plan.start_date, plan.end_date);
+  return (
+    <div
+      key={plan.id}
+      className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer relative"
+      onClick={() => navigate(`/studyplan/${plan.id}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          navigate(`/studyplan/${plan.id}`);
+        }
+      }}
+    >
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
+        <h3 className="text-lg font-semibold text-white-800 mb-2 md:mb-0">{plan.plan_name}</h3>
+       <div className="flex gap-2 z-10" onClick={(e) => e.stopPropagation()}>
+  <button
+    onClick={() => handleEditPlan(plan)}
+    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+    aria-label="Edit plan"
+    title="Edit plan"
+  >
+    <Edit className="w-4 h-4" />
+  </button>
+
+  <button
+    onClick={() => handleDelete(plan.id)}
+    className="p-1 text-red-600 hover:bg-red-100 rounded"
+    aria-label="Delete plan"
+    title="Delete plan"
+  >
+    <Trash2 className="w-4 h-4" />
+  </button>
+
+  <button
+    onClick={() => {
+      const shareUrl = `${window.location.origin}/studyplan/${plan.id}`;
+      navigator.clipboard.writeText(shareUrl);
+      toast.success("Study plan link copied to clipboard!");
+    }}
+    className="p-1 text-gray-600 hover:bg-gray-200 rounded"
+    aria-label="Share plan"
+    title="Share plan link"
+  >
+    <Share2 className="w-4 h-4" />
+  </button>
+</div>
+
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm text-gray-600">
+        <div>
+          <p><strong>Duration:</strong> {formatDate(plan.start_date)} - {formatDate(plan.end_date)}</p>
+          <p><strong>Daily Study Time:</strong> {plan.study_time} minutes</p>
+        </div>
+        <div>
+          <p><strong>Study Days:</strong> {Array.isArray(plan.weekdays) ? plan.weekdays.join(', ') : 'N/A'}</p>
+          <p>
+            <strong>Status:</strong>
+            <span className={`ml-1 px-2 py-1 rounded text-xs ${
+              status === 'active' ? 'bg-green-100 text-green-800' :
+              status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
+              'bg-gray-100 text-gray-600'
+            }`}>
+              {status === 'active' ? 'Active' : status === 'upcoming' ? 'Upcoming' : 'Completed'}
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+})}
+
             </div>
           )}
         </CardContent>
