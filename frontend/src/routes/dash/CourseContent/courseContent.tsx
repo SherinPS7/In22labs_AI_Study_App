@@ -1,7 +1,7 @@
 import { Pencil, Trash2, Plus } from "lucide-react";
 
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom"
+import { SetStateAction, useEffect, useState } from "react";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom"
 import Content from "./content";
 import Quizes from "./quizes";
 import FinalAssessment from "./finalAssessment";
@@ -18,11 +18,41 @@ const CourseContent = () => {
 
   const [courseName, setCourseName] = useState("");
   const [courseKeywords, setCourseKeywords] = useState([]);
+  const [enrolledCourseId, setEnrolledCourseId] = useState<number | null>(null);
 
+  const navigate = useNavigate();
+useEffect(() => {
+  const isValidUser = async () => {
+    try {
+      const response = await axios.get(`${backendURL}/courses/user/2`, {
+        headers: { 'Content-Type': 'application/json' },
+        withCredentials: true,
+      });
 
-  const [sortOrder, setSortOrder] = useState("");
-  const [sortViewCount, setSortViewCount] = useState("");
-  const [sortLikes, setSortLikes] = useState("");
+      const foundCourse = response.data.find(
+        (course: { ref_course_id: number; id: number }) => {
+          const isMatch =
+            course.ref_course_id === Number(courseId) ||
+            course.id === Number(courseId);
+          if (isMatch) setEnrolledCourseId(course.id);
+          return isMatch;
+        }
+      );
+
+      if (!foundCourse) {
+        console.error("User is not enrolled in this course.");
+        navigate(`/course-overview/${courseId}`);
+      } else {
+        navigate(`/course/${foundCourse.id}`); // ✅ Use foundCourse.id here
+      }
+    } catch (error) {
+      console.error("Error checking user validity:", error);
+    }
+  };
+
+  isValidUser();
+}, [courseId, backendURL]);
+
 
   useEffect(() => {
       const getCourseName = async () => {
@@ -72,7 +102,7 @@ const CourseContent = () => {
 
 
   return (
-    <div  style={{marginTop: "2rem"}}>
+    <div  style={{marginTop: "0.5rem"}}>
         <main className="flex justify-start md:justify-between items-start md:items-center flex-col md:flex-row gap-4 flex-wrap">
             <main className="header-row">
               <div className="course-title">
@@ -119,10 +149,10 @@ const CourseContent = () => {
             className="keyword-container"
             style={{
               display: "flex",
-              gap: "1rem",
+              gap: "0.2rem",
               flexWrap: "wrap",
               marginLeft: "1rem",
-              marginTop: "1rem",
+              marginTop: "0rem",
             }}
           >
             {courseKeywords.map((keyword, index) => (
