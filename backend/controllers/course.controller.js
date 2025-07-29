@@ -57,31 +57,35 @@ exports.createCourse = async (req, res) => {
     return res.status(400).json({ error: 'course_name and user_id_foreign_key are required' });
   }
 
-  try{
-
-    const newCourse = await Course.create({course_name, user_id_foreign_key});
+  try {
+    const newCourse = await Course.create({ course_name, user_id_foreign_key });
 
     const result = await generateKeywords(course_name, newCourse.id);
     if (!result.success) {
       return res.status(201).json({
         course: newCourse,
-        warning: result.error || 'Keyword generation failed',
-        rawResponse: result.raw || null
+        generatedTopics: [],
+        generatedVideos: [],
+        videoUrls: [],
+        keywordError: result.error || 'Unknown keyword generation error',
+        rawResponse: result.raw || null,
       });
     }
 
     return res.status(201).json({
       course: newCourse,
       generatedTopics: result.topics,
-      generatedVideos : result.videosGenerated
+      generatedVideos: result.videosGenerated,
+      videoUrls: result.videoUrls || [],
     });
-  }
 
-  catch (error) {
-    console.error('Error creating course and storing keywords:', error);
+  } catch (error) {
+    console.error('❌ Error creating course and storing keywords:', error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 };
+
+
 
 exports.deleteCourse = async (req, res) => {
   try {
@@ -173,3 +177,4 @@ exports.searchCourses = async (req, res) => {
     res.status(500).json({ error: "Server error while searching" });
   }
 };
+

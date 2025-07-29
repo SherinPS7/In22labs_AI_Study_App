@@ -5,7 +5,7 @@ const { z } = require("zod");
 const { createUserSchema } = require("../validators/authSchema");
 const { LoginUserSchema } = require("../validators/authSchema");
 
-// ✅ New Controller: Check if mobile number exists
+// New Controller: Check if mobile number exists
 exports.checkMobile = async (req, res) => {
   const { mobile } = req.body;
 
@@ -23,7 +23,7 @@ exports.checkMobile = async (req, res) => {
   }
 };
 
-// ✅ Final Signup (after OTP is verified on frontend)
+// Final Signup (after OTP is verified on frontend)
 exports.signup = async (req, res) => {
   try {
     // ✅ Validate incoming body
@@ -63,8 +63,15 @@ exports.signup = async (req, res) => {
     res.status(500).json({ message: 'Signup error', error: err.message });
   }
 };
-// ✅ New: Sign In with mobile and password
+//  New: Sign In with mobile and password
 exports.login = async (req, res) => {
+  const result = LoginUserSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Validation failed",
+      errors: result.error.flatten().fieldErrors,
+    });
+  }
   const { mobile, password } = req.body;
 
   if (!mobile || !password) {
@@ -82,26 +89,40 @@ exports.login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Incorrect password' });
     }
-      // Store user info in session
+
+    // Store user info in session
     req.session.userId = user.id;
     console.log("userid added to session" + req.session.userId);
     req.session.firstname = user.first_name;
     req.session.lastname = user.last_name;
     req.session.mobile = user.mobile;
-    return res.status(200).json({
-      message: 'Login successful',
-      user: {
-        id: user.id,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        mobile: user.mobile,
-      },
+
+    
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).json({ message: 'Session save error', error: err.message });
+      }
+
+      
+      console.log('Session saved:', req.session); // Debug
+      return res.status(200).json({
+        message: 'Login successful',
+        user: {
+          id: user.id,
+          firstname: user.first_name,
+          lastname: user.last_name,
+          mobile: user.mobile,
+        },
+      });
     });
   } catch (err) {
     console.error('Error during login:', err);
     return res.status(500).json({ message: 'Login error', error: err.message });
   }
 };
+
+
 exports.resetPassword = async (req, res) => {
   const { mobile, newPassword } = req.body;
 

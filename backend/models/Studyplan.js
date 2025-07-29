@@ -15,6 +15,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    group_id: {
+  type: DataTypes.INTEGER,
+  allowNull: true
+},
+
     start_date: {
       type: DataTypes.DATEONLY,
       allowNull: false
@@ -32,7 +37,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    // ADD THESE NEW FIELDS
     course_ids: {
       type: DataTypes.JSON,
       allowNull: true,
@@ -47,6 +51,17 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: 0
+    },
+    // ✅ NEW FIELDS
+    sync_with_notion: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+    sync_with_google: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     }
   }, {
     tableName: 'StudyPlans', 
@@ -56,7 +71,6 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   StudyPlan.associate = function(models) {
-    // Add associations if you have a User model
     // StudyPlan.belongsTo(models.User, { foreignKey: 'user_id' });
   };
 

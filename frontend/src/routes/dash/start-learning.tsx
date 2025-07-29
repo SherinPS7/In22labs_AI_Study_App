@@ -1,73 +1,123 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
-const PythonCard = "/course-thumbnails/intro-to-python.jpeg";
-const UIUXCard = "/course-thumbnails/ui-ux-guide.jpeg";
-const FrontendCard = "/course-thumbnails/frontend.jpeg";
 
+type Recommendation = {
+  id: number;
+  course_name: string;
+  user_id_foreign_key: number;
+  first_video_url: string | null;
+  // first_video_thumbnail is now ignored
+};
+
+const getYouTubeId = (url: string | null): string | null => {
+  if (!url) return null;
+
+  try {
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname;
+
+    // Handle normal YouTube links (https://www.youtube.com/watch?v=xyz)
+    if (hostname.includes('youtube.com')) {
+      return parsedUrl.searchParams.get('v');
+    }
+
+    // Handle shortened URLs (https://youtu.be/xyz)
+    if (hostname.includes('youtu.be')) {
+      return parsedUrl.pathname.split('/')[1];
+    }
+
+    return null;
+  } catch (e) {
+    return null;
+  }
+};
+
+const getThumbnailUrl = (videoUrl: string | null): string => {
+  const videoId = getYouTubeId(videoUrl);
+  return videoId
+    ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+    : '/fallback-thumbnail.jpg';
+};
 
 const StartLearning = () => {
+  const [courses, setCourses] = useState<Recommendation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const fetchRecommendations = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/recommendations', {
+        method: 'GET',
+        credentials: 'include', // ✅ This allows cookies to be sent
+      });
+
+      const data = await response.json();
+      setCourses(data.recommendations || []);
+    } catch (error) {
+      console.error('Failed to fetch recommendations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchRecommendations();
+}, []);
+
+  if (loading) {
+    return <div className="text-center mt-6 text-muted-foreground">Loading recommendations...</div>;
+  }
+
+  if (courses.length === 0) {
+    return <div className="text-center mt-6 text-muted-foreground">No recommendations available.</div>;
+  }
+
   return (
     <section className="mt-6">
-  <h2 className="text-2xl font-semibold text-foreground mb-4">Start Learning</h2>
-  
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {/* Python Course Card */}
-    <div className="bg-card rounded-2xl shadow-md overflow-hidden">
-      <div className="relative h-48">
-      <img src={PythonCard} className="w-full h-full object-cover" alt="Introduction to Python" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <a href="https://youtu.be/ix9cRaBkVe0?si=pUDTvdmchIYJziIQ" target="_blank" rel="noopener noreferrer">
-          <Button variant="ghost" size="icon" className="bg-background/30 backdrop-blur-sm hover:bg-background/50 rounded-full">
-            <Play className="w-6 h-6" />
-          </Button>
-          </a>
-        </div>
+      <h2 className="text-2xl font-semibold text-foreground mb-4">Start Learning</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {courses.map((course) => {
+          const thumbnail = getThumbnailUrl(course.first_video_url);
+
+          return (
+            <div key={course.id} className="bg-card rounded-2xl shadow-md overflow-hidden">
+              <div className="relative h-48">
+                <img
+                  src={thumbnail}
+                  className="w-full h-full object-cover"
+                  alt={course.course_name}
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {course.first_video_url && (
+                    <a
+                      href={course.first_video_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="bg-background/30 backdrop-blur-sm hover:bg-background/50 rounded-full"
+                      >
+                        <Play className="w-6 h-6" />
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              </div>
+              <div className="p-4">
+                <h3 className="text-lg font-medium">{course.course_name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  Start learning with the first video of this course.
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <div className="p-4">
-        <h3 className="text-lg font-medium">Introduction to Python</h3>
-        <p className="text-sm text-muted-foreground">Learn Python fundamentals, data structures, and build your first application</p>
-      </div>
-    </div>
-    
-    {/* UI/UX Course Card */}
-    <div className="bg-card rounded-2xl shadow-md overflow-hidden">
-      <div className="relative h-48">
-        <img src={UIUXCard} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <a href="https://youtu.be/cKZEgtQUxlU?si=uMQGYO7wuWprWPkK" target="blank" rel="noopener referrer">
-          <Button variant="ghost" size="icon" className="bg-background/30 backdrop-blur-sm hover:bg-background/50 rounded-full">
-            <Play className="w-6 h-6" />
-          </Button>
-          </a>
-        </div>
-      </div>
-      <div className="p-4">
-        <h3 className="text-lg font-medium">Ultimate Guide to UI/UX</h3>
-        <p className="text-sm text-muted-foreground">Master user interface design principles and create engaging user experiences</p>
-      </div>
-    </div>
-    
-    {/* Frontend Course Card */}
-    <div className="bg-card rounded-2xl shadow-md overflow-hidden">
-      <div className="relative h-48">
-        <img src={FrontendCard} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <a href = "https://youtu.be/zJSY8tbf_ys?si=1IMfdkbEQ9ojcbvK" target="blank" rel="noopener referrer">
-          <Button variant="ghost" size="icon" className="bg-background/30 backdrop-blur-sm hover:bg-background/50 rounded-full">
-            <Play className="w-6 h-6" />
-          </Button>
-          </a>
-        </div>
-      </div>
-      <div className="p-4">
-        <h3 className="text-lg font-medium">Learn Frontend - Full Roadmap</h3>
-        <p className="text-sm text-muted-foreground">From HTML basics to advanced React frameworks - complete path to frontend mastery</p>
-      </div>
-    </div>
-  </div>
-</section>
-);
+    </section>
+  );
 };
 
 export default StartLearning;

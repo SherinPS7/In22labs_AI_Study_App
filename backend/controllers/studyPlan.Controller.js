@@ -1,6 +1,8 @@
 // controllers/studyPlanController.js
 const { StudyPlan, StudyProgress } = require('../models');
 const { Course } = require('../models'); // Add this if not already imported
+const createNotionDB = require('../utils/createNotionDB');
+const { NotionToken } = require('../models');
 
 const studyPlanController = {
   
@@ -29,80 +31,116 @@ const studyPlanController = {
     }
   },
 
-  // POST /api/study-plans - UPDATED to handle course_ids and course_settings
   createStudyPlan: async (req, res) => {
-    try {
-      const { 
-        user_id, 
-        plan_name, 
-        start_date, 
-        end_date, 
-        weekdays, 
-        study_time, 
-        course_ids, 
-        course_settings 
-      } = req.body;
-      
-      if (!user_id || !plan_name || !start_date || !end_date || !study_time) {
-        return res.status(400).json({ 
-          error: 'user_id, plan_name, start_date, end_date, and study_time are required' 
-        });
-      }
+  try {
+    const { 
+      user_id, 
+      plan_name, 
+      start_date, 
+      end_date, 
+      weekdays, 
+      study_time, 
+      course_ids, 
+      course_settings,
+      sync_with_notion 
+    } = req.body;
 
-      // Validate course limit
-      if (course_ids && course_ids.length > 5) {
-        return res.status(400).json({ error: 'Maximum 5 courses allowed per study plan' });
-      }
-
-      // Validate weekdays array
-      if (weekdays && !Array.isArray(weekdays)) {
-        return res.status(400).json({ error: 'weekdays must be an array' });
-      }
-
-      // Validate date format and logic
-      const startDate = new Date(start_date);
-      const endDate = new Date(end_date);
-      
-      if (startDate >= endDate) {
-        return res.status(400).json({ error: 'end_date must be after start_date' });
-      }
-      
-      const studyPlan = await StudyPlan.create({
-        user_id,
-        plan_name,
-        start_date,
-        end_date,
-        weekdays: weekdays || [],
-        study_time,
-        course_ids: course_ids || [],
-        course_settings: course_settings || {},
-        course_count: course_ids ? course_ids.length : 0
+    if (!user_id || !plan_name || !start_date || !end_date || !study_time) {
+      return res.status(400).json({ 
+        error: 'user_id, plan_name, start_date, end_date, and study_time are required' 
       });
-      
-      res.status(201).json({ studyPlan });
-    } catch (error) {
-      console.error('Error creating study plan:', error);
-      res.status(500).json({ error: 'Failed to create study plan' });
     }
-  },
+
+    if (course_ids && course_ids.length > 5) {
+      return res.status(400).json({ error: 'Maximum 5 courses allowed per study plan' });
+    }
+
+    if (weekdays && !Array.isArray(weekdays)) {
+      return res.status(400).json({ error: 'weekdays must be an array' });
+    }
+
+    const startDate = new Date(start_date);
+    const endDate = new Date(end_date);
+    if (startDate >= endDate) {
+      return res.status(400).json({ error: 'end_date must be after start_date' });
+    }
+
+    const studyPlan = await StudyPlan.create({
+      user_id,
+      plan_name,
+      start_date,
+      end_date,
+      weekdays: weekdays || [],
+      study_time,
+      course_ids: course_ids || [],
+      course_settings: course_settings || {},
+      course_count: course_ids ? course_ids.length : 0,
+      sync_with_notion: !!sync_with_notion
+    });
+
+   if (sync_with_notion) {
+  const notionToken = await NotionToken.findOne({ where: { user_id_foreign_key: user_id } });
+
+  if (!notionToken || !notionToken.parent_page_id) {
+    return res.status(401).json({
+      error: 'Notion not connected or parent page not set. Please reconnect and select a page.'
+    });
+  }
+
+  const createNotionDB = require('../utils/createNotionDB');
+  try {
+    await createNotionDB(studyPlan, notionToken);
+    console.log('✅ Synced with Notion');
+  } catch (err) {
+    console.error('❌ Notion sync failed:', err.message);
+    return res.status(500).json({
+      error: 'Study plan created, but failed to sync with Notion.'
+    });
+  }
+}
+
+
+    res.status(201).json({ studyPlan });
+   
+  } catch (error) {
+    console.error('Error creating study plan:', error);
+    res.status(500).json({ error: 'Failed to create study plan' });
+  }
+},
+
 
   // GET /api/study-plans/:id
-  getStudyPlanById: async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      const studyPlan = await StudyPlan.findByPk(id);
-      
-      if (!studyPlan) {
-        return res.status(404).json({ error: 'Study plan not found' });
-      }
-      
-      res.json({ studyPlan });
-    } catch (error) {
-      console.error('Error fetching study plan:', error);
-      res.status(500).json({ error: 'Failed to fetch study plan' });
+getStudyPlanById: async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.session.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: No session' });
     }
-  },
+
+    if (isNaN(Number(id))) {
+      return res.status(400).json({ error: 'Invalid study plan ID' });
+    }
+
+    const studyPlan = await StudyPlan.findOne({
+      where: {
+        id,
+        user_id_foreign_key: userId
+      }
+    });
+
+    if (!studyPlan) {
+      return res.status(404).json({ error: 'Study plan not found or access denied' });
+    }
+
+    res.json(studyPlan); // or res.json({ studyPlan }) based on your API pattern
+  } catch (error) {
+    console.error('Error fetching study plan:', error);
+    res.status(500).json({ error: 'Failed to fetch study plan' });
+  }
+}
+,
 
   // PUT /api/study-plans/:id - UPDATED to handle course_ids and course_settings
   updateStudyPlan: async (req, res) => {
@@ -308,33 +346,42 @@ getStudyPlanVideoProgress: async (req, res) => {
 
   // NEW METHOD: GET /api/study-plans/:id/with-courses - Get study plan with full course details
   getStudyPlanWithCourses: async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      const studyPlan = await StudyPlan.findByPk(id);
-      
-      if (!studyPlan) {
-        return res.status(404).json({ error: 'Study plan not found' });
-      }
-      
-      const planData = studyPlan.toJSON();
-      
-      // If plan has course_ids, fetch course details
-      if (planData.course_ids && planData.course_ids.length > 0) {
-        const courseDetails = await Course.findAll({
-          where: { id: planData.course_ids },
-          attributes: ['id', 'course_name', 'description', 'duration_weeks', 'createdAt']
-        });
-        
-        planData.course_details = courseDetails;
-      }
-      
-      res.json({ studyPlan: planData });
-    } catch (error) {
-      console.error('Error fetching study plan with courses:', error);
-      res.status(500).json({ error: 'Failed to fetch study plan with courses' });
+  try {
+    const { id } = req.params;
+
+    const studyPlan = await StudyPlan.findByPk(id);
+
+    if (!studyPlan) {
+      return res.status(404).json({ error: 'Study plan not found' });
     }
+
+    const planData = studyPlan.toJSON();
+
+    // If plan has course_ids, fetch course details
+    if (planData.course_ids && planData.course_ids.length > 0) {
+      const courseDetails = await Course.findAll({
+        where: { id: planData.course_ids },
+        attributes: [
+          'id',
+          'course_name',
+          'user_id_foreign_key',
+          'ref_course_id',
+          'notion_template_db_id'
+          // Add more fields here if they exist in your model
+        ]
+      });
+
+      planData.course_details = courseDetails;
+    }
+
+    res.json({ studyPlan: planData });
+  } catch (error) {
+    console.error('Error fetching study plan with courses:', error);
+    res.status(500).json({ error: 'Failed to fetch study plan with courses' });
+  }
+
   }
 };
 
 module.exports = studyPlanController;
+//http://localhost:3000/api/studyplan/study-plans?userId=8

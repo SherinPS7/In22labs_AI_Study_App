@@ -1,4 +1,4 @@
-import { LoginUserTypes } from "@/types/auth-types";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginUserSchema } from "@/schemas/auth-schemas";
@@ -25,24 +25,21 @@ import { Button } from "@/components/ui/button";
 import { Loader, Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
-//import OauthWrapper from "@/components/auth/oauth-wrapper";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
-import { GetCurrentSession } from "@/api/auth";
-import { useEffect } from "react";
 import { motion } from "framer-motion";
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const form = useForm<LoginUserTypes>({
+  const form = useForm({
     resolver: zodResolver(LoginUserSchema),
     defaultValues: { mobile: "", password: "" },
   });
 
   const { loginMutation } = useAuth();
   const navigate = useNavigate();
-   useCheckSession();
-  const onSubmit = async (values: LoginUserTypes) => {
+  useCheckSession();
+
+  const onSubmit = async (values: { mobile: string; password: string }) => {
     try {
       const response = await loginMutation.mutateAsync(values);
       if (response) {
@@ -56,7 +53,7 @@ const SignIn = () => {
 
   return (
     <div className="h-[calc(100vh-64px)] w-full flex bg-gradient-to-br from-black via-gray-900 to-green-900 relative overflow-hidden">
-      {/* Subtle Animated Pattern Background */}
+      {/* Background Pattern */}
       <div className="absolute inset-0 opacity-20">
         <svg className="absolute top-0 left-0 w-full h-full">
           <defs>
@@ -73,16 +70,13 @@ const SignIn = () => {
         </svg>
       </div>
 
-      {/* Left Section - Welcome Message */}
+      {/* Left Side - Welcome */}
       <motion.div
         className="hidden lg:flex flex-col justify-center items-start w-1/2 px-16 text-white relative"
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 1 }}
       >
-        {/* Background Accent */}
-        {/* <div className="absolute top-1/4 left-[-50px] w-48 h-48 bg-green-500 opacity-30 blur-3xl rounded-full animate-pulse"></div> */}
-
         <motion.h1
           className="text-5xl font-extrabold leading-tight text-white drop-shadow-lg"
           initial={{ opacity: 0, y: -20 }}
@@ -115,7 +109,7 @@ const SignIn = () => {
         </motion.p>
       </motion.div>
 
-      {/* Right Section - Login Form */}
+      {/* Right Side - Login Form */}
       <motion.div
         className="flex justify-center items-center w-full lg:w-1/2 px-6"
         initial={{ opacity: 0, x: 50 }}
@@ -128,9 +122,7 @@ const SignIn = () => {
           className="w-full max-w-md bg-black/50 border border-white/20 shadow-xl backdrop-blur-lg p-8 rounded-2xl"
         >
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-semibold text-white">
-              Sign In
-            </CardTitle>
+            <CardTitle className="text-3xl font-semibold text-white">Sign In</CardTitle>
             <CardDescription className="text-gray-300">
               Access AI-driven learning tailored just for you.
             </CardDescription>
@@ -138,26 +130,27 @@ const SignIn = () => {
 
           <CardContent>
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-5"
-              >
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                 {/* Mobile Number Field */}
                 <FormField
                   control={form.control}
                   name="mobile"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white">
-                        Mobile Number
-                      </FormLabel>
+                      <FormLabel className="text-white">Mobile Number</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="XXXXXXXXXX"
+                          placeholder="1234567890"
                           type="tel"
-                          pattern="[0-9]{10}"
                           maxLength={10}
+                          onChange={(e) => {
+                            // Only allow digits, no spaces or alphabets
+                            const digitsOnly = e.target.value.replace(/\D/g, "");
+                            if (digitsOnly.length <= 10) {
+                              field.onChange(digitsOnly);
+                            }
+                          }}
                           className="bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:ring-green-500 focus:border-green-500"
                         />
                       </FormControl>
@@ -185,12 +178,10 @@ const SignIn = () => {
                             type="button"
                             className="absolute inset-y-0 right-3 flex items-center text-gray-400"
                             onClick={() => setShowPassword((prev) => !prev)}
+                            tabIndex={-1}
+                            aria-label={showPassword ? "Hide password" : "Show password"}
                           >
-                            {showPassword ? (
-                              <Eye size={18} />
-                            ) : (
-                              <EyeOff size={18} />
-                            )}
+                            {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                           </button>
                         </div>
                       </FormControl>
@@ -208,10 +199,7 @@ const SignIn = () => {
                     </label>
                   </div>
                   <Button size="sm" variant="link" asChild>
-                    <Link
-                      to="/send-mobile"
-                      className="text-green-400 hover:underline"
-                    >
+                    <Link to="/send-mobile" className="text-green-400 hover:underline">
                       Forgot Password?
                     </Link>
                   </Button>
@@ -231,11 +219,11 @@ const SignIn = () => {
                       disabled={form.formState.isSubmitting}
                       variant="default"
                       className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold transition-all shadow-lg"
+                      type="submit"
                     >
                       {form.formState.isSubmitting ? (
                         <>
-                          <Loader className="mr-2 w-4 h-4 animate-spin" />{" "}
-                          Logging in...
+                          <Loader className="mr-2 w-4 h-4 animate-spin" /> Logging in...
                         </>
                       ) : (
                         "Login"
@@ -247,15 +235,11 @@ const SignIn = () => {
             </Form>
           </CardContent>
 
-          {/* OAuth & Sign-up Link */}
+          {/* Sign-up Link */}
           <div className="px-8 pb-6">
-            {/* <OauthWrapper /> */}
             <p className="text-center text-sm text-gray-300 mt-4">
               Don't have an account?{" "}
-              <Link
-                to="/sign-up"
-                className="text-green-400 hover:underline font-medium"
-              >
+              <Link to="/sign-up" className="text-green-400 hover:underline font-medium">
                 Sign up
               </Link>
             </p>
