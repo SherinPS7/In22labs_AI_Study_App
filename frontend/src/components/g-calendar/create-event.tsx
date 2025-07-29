@@ -20,17 +20,34 @@ const CreateEventDialog = () => {
         }
     });
 
-    const onSubmit = async (values : CreateEventTypes) => {
-        try {
-            setLoading(true);
-            console.log(values);
-        } catch (error) {
-            AppErrClient(error);
-        } finally {
-            setLoading(false);
-            setOpen(false);
-        }
-    };
+    const onSubmit = async (values: CreateEventTypes) => {
+  try {
+    setLoading(true);
+
+    const response = await fetch('/google/events', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(values),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create event');
+    }
+
+    // Optionally, parse response data
+    // const createdEvent = await response.json();
+
+    setOpen(false);
+  } catch (error) {
+    AppErrClient(error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

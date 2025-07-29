@@ -12,12 +12,19 @@ import EditVideoModal from "./editVideoModal";
 
 
 const CourseContent = () => {
+  
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
   const { courseId } = useParams();
+ // const userId = Number(localStorage.getItem("userId")); // 
+ const userId = 27; // ✅ Temporary static userId for testing
 
+type Keyword = {
+  id: number;
+  keyword: string;
+};
   const [courseName, setCourseName] = useState("");
-  const [courseKeywords, setCourseKeywords] = useState([]);
+  // const [courseKeywords, setCourseKeywords] = useState([]);
   const [enrolledCourseId, setEnrolledCourseId] = useState<number | null>(null);
 
   const navigate = useNavigate();
@@ -53,6 +60,10 @@ useEffect(() => {
   isValidUser();
 }, [courseId, backendURL]);
 
+  //const [courseKeywords, setCourseKeywords] = useState([]);
+const [courseKeywords, setCourseKeywords] = useState<Keyword[]>([]);
+
+console.log("Course ID (static):", courseId);
 
   useEffect(() => {
       const getCourseName = async () => {
@@ -84,12 +95,16 @@ useEffect(() => {
             // 'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
-        const keywords = response.data.map((element: { keyword: String; }) => element.keyword);
-        setCourseKeywords(keywords);
-        console.log("Course Keywords:", courseKeywords)
-      }
-      catch (error) {
-        console.error("Error fetching course keywords:", error);
+        // const keywords = response.data.map((element: { keyword: String; }) => element.keyword);
+        // setCourseKeywords(keywords);
+        setCourseKeywords(response.data); // full objects with id + keyword
+
+      //  
+      // 🔍 Extract keyword IDs
+      const keywordIds = response.data.map((k: { id: number }) => k.id);
+      console.log("Keyword IDs:", keywordIds);
+    } catch (error) {
+      console.error("Error fetching course keywords:", error);
       }
     }
     getCourseKeywords();
@@ -99,6 +114,8 @@ useEffect(() => {
   const [refreshKey, setRefreshKey] = useState(0);
 
 
+// Convert courseKeywords into array of keyword IDs
+const keywordIds = courseKeywords.map((keywordObj: any) => keywordObj.id);
 
 
   return (
@@ -145,7 +162,7 @@ useEffect(() => {
               </button>
             ))}
           </div> */}
-          <div
+          {/* <div
             className="keyword-container"
             style={{
               display: "flex",
@@ -174,7 +191,40 @@ useEffect(() => {
                 }}
                 disabled
               >
-                {keyword}
+                {keyword.keyword}
+              </button>
+            ))}
+          </div>  */}
+          <div
+            className="keyword-container"
+            style={{
+              display: "flex",
+              gap: "1rem",
+              flexWrap: "wrap",
+              marginLeft: "1rem",
+              marginTop: "1rem",
+            }}
+          >
+            {courseKeywords.map((keywordObj, index) => (
+              <button
+                className="keyword-button"
+                key={index}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.5rem 1rem",
+                  backgroundColor: "rgb(76, 76, 76)",
+                  borderRadius: "1rem",
+                  border: "none",
+                  cursor: "default",
+                  margin: "5px",
+                  fontSize: "14px",
+                  color: "rgb(189, 247, 196)",
+                }}
+                disabled
+              >
+                {keywordObj.keyword}
               </button>
             ))}
           </div>
@@ -231,7 +281,9 @@ useEffect(() => {
           <Quizes />
         </div>
         <div>
-          <FinalAssessment />
+          {/* <FinalAssessment /> */}
+          <FinalAssessment userId={userId} keywordIds={keywordIds} />
+
         </div>
         <div>
           <AlternativeContent />

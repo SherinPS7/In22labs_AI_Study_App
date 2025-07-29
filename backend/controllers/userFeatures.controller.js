@@ -10,7 +10,7 @@ const saveFeatures = async (req, res) => {
       return res.status(400).json({ error: "Invalid or empty feature list" });
     }
 
-    const userId = '1'; // dummy UUID
+    const userId = '8'; // dummy UUID
 
     // Insert features for the user using Sequelize
     await UserFeatures.create({

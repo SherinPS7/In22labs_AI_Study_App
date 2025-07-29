@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 import { Link } from "react-router-dom";
 import { User } from "lucide-react";
 import UpdateEventDialog from "./update-events";
-import DeleteEventsDrawer from "./delete-events";
+// import  DeleteEventsDrawer from "./delete-events";
 
 const ListEvents = ({content} : {
   content : any
@@ -31,7 +31,7 @@ const ListEvents = ({content} : {
                   </Link>
               </Button>
               <UpdateEventDialog />
-              <DeleteEventsDrawer />
+             
           </main>
       </CardFooter>
 </Card>

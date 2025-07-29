@@ -18,23 +18,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ARRAY(DataTypes.TEXT), // To store an array of text
       allowNull: false,
     },
-    createdAt: {
-      type: DataTypes.DATE, // Corresponds to timestamp with time zone
-      allowNull: false,
-      defaultValue: sequelize.fn('now'), // Set default to current timestamp
-    },
-    updatedAt: {
-      type: DataTypes.DATE, // Corresponds to timestamp with time zone
-      allowNull: false,
-      defaultValue: sequelize.fn('now'), // Set default to current timestamp
-    },
+    
   }, {
     // Define table-level options
-    tableName: 'UserFeatures',
+    // tableName: 'UserFeatures',
     timestamps: true, // Automatically adds createdAt and updatedAt
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
-    underscored: true, // Optionally use snake_case for column names
+
   });
 
   return UserFeatures;

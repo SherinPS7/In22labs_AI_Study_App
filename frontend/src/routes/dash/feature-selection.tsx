@@ -71,7 +71,7 @@
 //     console.log("Selected Features:", selectedFeatures);
 
 //     try {
-//       const response = await fetch("http://localhost:5000/api/features/save-features", {
+//       const response = await fetch("http://localhost:3000/api/features/save-features", {
 //         method: "POST",
 //         headers: {
 //           "Content-Type": "application/json",
@@ -335,7 +335,7 @@ const FeatureSelection = () => {
   const handleSubmit = async () => {
     console.log("Selected Features:", selectedFeatures);
     try {
-      const response = await fetch("http://localhost:5000/api/features/save-features", {
+      const response = await fetch("http://localhost:3000/api/features/save-features", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

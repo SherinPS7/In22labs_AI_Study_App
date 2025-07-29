@@ -7,13 +7,13 @@ module.exports = (sequelize, DataTypes) => {
       video_duration: DataTypes.STRING,
       video_progress: DataTypes.BOOLEAN,
 
-      course_id_foreign_key: DataTypes.INTEGER,
-    });
-  
-    Videos.associate = models => {
-      Videos.belongsTo(models.Course, { foreignKey: 'course_id_foreign_key' });
-    };
-  
-    return Videos;
+    course_id_foreign_key: DataTypes.INTEGER,
+  });
+
+  Videos.associate = models => {
+    Videos.belongsTo(models.Course, { foreignKey: 'course_id_foreign_key' });
   };
-  
+
+  return Videos;
+};
+

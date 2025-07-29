@@ -9,7 +9,8 @@ import { Trash2 } from "lucide-react";
 
 const MyLearnings = () => {
   const backendURL = import.meta.env.VITE_BACKEND_URL;
-  const [userId, setUserId] = useState(2);
+
+  const userId = 5; // Replace with actual userId if needed
 
   type Course = {
     id: number;

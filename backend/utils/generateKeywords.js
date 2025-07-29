@@ -3,25 +3,21 @@ const db = require('../models');
 const { fetchVideo } = require('./fetchVideo');
 const Keywords = db.Keywords;
 
-
-async function generateKeywords(courseName, courseId){
+async function generateKeywords(courseName, courseId) {
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4.1-nano',
       messages: [
         {
           role: 'system',
-          content: `You are an expert curriculum planner. When given a course name or description, respond ONLY with a JSON object structured like this:
+          content: `You are an expert curriculum planner. When given a course name or description, respond ONLY with a JSON object like this:
 
 {
   "course": "Course Name",
-  "topics": [
-    "Topic 1",
-    "Topic 2"
-  ]
+  "topics": ["Topic 1", "Topic 2"]
 }
 
-Do not include any explanations or extra text. Minimize the number of topics to 3 to 6 based on requirement.`
+Respond with 3–6 concise topics.`
         },
         {
           role: 'user',
@@ -40,29 +36,33 @@ Do not include any explanations or extra text. Minimize the number of topics to 
       return { success: false, raw: rawContent, error: 'Failed to parse GPT response' };
     }
 
-    // Store in Keywords table
     const keywords = topicsJson.topics;
-    const createdVideos = [];
+    const videoTitles = [];
+    const videoUrls = [];
+    const videoThumbnails = [];
 
-    for(const keyword of keywords) {
-      const keywordEntry = await Keywords.create({
-        keyword,
-        course_id_foreign_key: courseId
-      });
-      
+    for (const keyword of keywords) {
+      await Keywords.create({ keyword, course_id_foreign_key: courseId });
 
       const video = await fetchVideo(keyword, courseId);
-      if(video?.success) {
-        createdVideos.push(video.video.video_title);
+      if (video?.success) {
+        videoTitles.push(video.video.video_title);
+        videoUrls.push(video.video.video_url);
+        videoThumbnails.push(video.video.video_thumbnail);
       }
-
     }
 
-    return { success: true, topics: keywords, videosGenerated : createdVideos };
+    return {
+      success: true,
+      topics: keywords,
+      videosGenerated: videoTitles,
+      videoUrls,
+      videoThumbnails,
+    };
   } catch (err) {
     console.error('Error generating keywords or videos:', err);
     return { success: false, error: err.message };
   }
-};
+}
 
 module.exports = generateKeywords;
