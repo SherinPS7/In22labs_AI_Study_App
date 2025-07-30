@@ -24,14 +24,16 @@ const views = ["month", "day"] as const;
 type View = (typeof views)[number];
 
 type StudyPlan = {
-    id: number;
+  id: number;
   name: string;
   color: string;
-  weekdays: number[]; // 0 = Sun, ...
-  studyTime: string; // HH:mm
-  startDate: string; // ISO string
+  weekdays: number[];
+  studyTime: string;
+  startDate: string;
   endDate: string;
+  start_time: string; // Optional start time for the plan
 };
+
 
 const weekdayMap: { [key: string]: number } = {
   Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
@@ -61,18 +63,25 @@ export default function CalendarView() {
   const end = endOfWeek(endOfMonth(selectedDate), { weekStartsOn: 0 });
   const days = eachDayOfInterval({ start, end });
 
- const handleDayClick = (date: Date) => {
+const handleDayClick = (date: Date) => {
   const weekday = date.getDay();
   console.log("Day clicked:", date, "→ Weekday index:", weekday);
 
   const matchingPlans = studyPlans.filter(plan => {
     const planStart = new Date(plan.startDate);
     const planEnd = new Date(plan.endDate);
-    return (
-      plan.weekdays.includes(weekday) &&
-      date >= planStart &&
-      date <= planEnd
-    );
+    const weekdayIncludes = plan.weekdays.includes(weekday);
+    const dateInRange = date >= planStart && date <= planEnd;
+
+    console.log(`Checking plan "${plan.name}" for the day:`, {
+      weekdayIncludes,
+      dateInRange,
+      planStart: planStart.toISOString(),
+      planEnd: planEnd.toISOString(),
+      date: date.toISOString()
+    });
+
+    return weekdayIncludes && dateInRange;
   });
 
   console.log("Matching plans for the day:", matchingPlans);
@@ -80,6 +89,7 @@ export default function CalendarView() {
   setSelectedDate(date);
   setOpen(true);
 };
+
 
 
   const handleMonthClick = (monthIndex: number) => {
@@ -92,58 +102,82 @@ export default function CalendarView() {
   const prevMonth = () => setSelectedDate(subMonths(selectedDate, 1));
   const nextMonth = () => setSelectedDate(addMonths(selectedDate, 1));
 
- const transformPlans = (apiData: any[]): StudyPlan[] => {
+const transformPlans = (apiData: any[]): StudyPlan[] => {
   return apiData.map(plan => {
-    const weekdayArray = plan.weekdays
-      .split(",")
-      .map((day: string) => weekdayMap[day.trim()]);
+    const weekdayArray = Array.isArray(plan.weekdays)
+      ? plan.weekdays.map((day: string) => {
+          const cleaned = day.trim().charAt(0).toUpperCase() + day.trim().slice(1).toLowerCase();
+          const wdNum = weekdayMap[cleaned];
+          console.log(`Mapping weekday "${day}" to number:`, wdNum);
+          return wdNum;
+        })
+      : [];
+
+    console.log(`Transforming plan: ${plan.plan_name}`, {
+      weekdays: weekdayArray,
+      start_time: plan.start_time,
+    });
 
     return {
       id: plan.id,
       name: plan.plan_name,
       color: getRandomColor(),
       weekdays: weekdayArray,
-      studyTime: plan.study_time.slice(0, 5),
+      studyTime: plan.start_time || (plan.study_time ? plan.study_time.slice(0, 5) : "00:00"),
       startDate: plan.start_date,
       endDate: plan.end_date,
+      start_time: plan.start_time || "00:00",
     };
   });
 };
 
 
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/api/plans/",
 
-          {
-             method: "GET",
-             credentials: "include"},  // Ensure cookies are sent with the request
-        );
-        console.log("API Response status:", res.status);
-        if (!res.ok) throw new Error("Failed to fetch plans");
-        const data = await res.json();
-        console.log("Raw API data:", data);
-        const transformed = transformPlans(data);
-        setStudyPlans(transformed);
-      } catch (err) {
-        console.error("Error fetching study plans:", err);
-      }
-    };
-    fetchPlans();
-  }, []);
 
-  useEffect(() => {
-    if (open && activePlans.length > 0 && timelineRef.current) {
-      const times = activePlans.map(plan => {
-        const [hourStr, minStr] = plan.studyTime.split(":");
-        return parseInt(hourStr, 10) + parseInt(minStr, 10) / 60;
-      });
-      const earliestTime = Math.min(...times);
-      const hourHeight = 50;
-      timelineRef.current.scrollTop = earliestTime * hourHeight;
+
+useEffect(() => {
+  const fetchPlans = async () => {
+    try {
+      const res = await fetch("http://localhost:3000/api/studyplan/study-plans?userId=1",  
+        {
+          method: "GET",
+          credentials: "include"
+        },
+      );
+      console.log("API Response status:", res.status);
+      if (!res.ok) throw new Error("Failed to fetch plans");
+      const data = await res.json();
+      console.log("Raw API data:", data);
+
+      const transformed = transformPlans(data.studyPlans || []);
+      console.log("Transformed study plans:", transformed);
+
+      setStudyPlans(transformed);
+    } catch (err) {
+      console.error("Error fetching study plans:", err);
     }
-  }, [open, activePlans]);
+  };
+  fetchPlans();
+}, []);
+
+
+ useEffect(() => {
+  if (open && activePlans.length > 0 && timelineRef.current) {
+    const times = activePlans.map(plan => {
+      const [hourStr, minStr] = plan.start_time ? plan.start_time.split(":") : ["0","0"];
+      const hour = parseInt(hourStr);
+      const min = parseInt(minStr);
+      console.log(`Plan: ${plan.name} start time split as ${hour}:${min}`);
+      return hour + min / 60;
+    });
+
+    const earliestTime = Math.min(...times);
+    console.log("Earliest plan start time (decimal):", earliestTime);
+
+    const hourHeight = 50;
+    timelineRef.current.scrollTop = earliestTime * hourHeight;
+  }
+}, [open, activePlans]);
 
   const monthNames = Array.from({ length: 12 }, (_, i) =>
     format(new Date(2023, i, 1), "MMM")
@@ -239,6 +273,7 @@ const dayPlans = studyPlans.filter(plan => {
             <DialogTitle>Plans for {format(selectedDate, "PPP")}</DialogTitle>
           </DialogHeader>
           {activePlans.length > 0 ? (() => {
+            console.log("Active plans to show in dialog:", activePlans);
             const times = activePlans.map(plan => {
               const [hourStr, minStr] = plan.studyTime.split(":");
               return { hour: parseInt(hourStr), min: parseInt(minStr), plan };

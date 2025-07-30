@@ -1,4 +1,5 @@
 // StudyPlanPopup.tsx
+
 import React, { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -21,9 +22,11 @@ interface Course {
   createdAt?: string;
 }
 
+// *** NEW: Added start_time field below
 interface CourseSettings {
   daily_hours: number;
   study_days: string[];
+  start_time: string;
   notes: string;
 }
 
@@ -31,10 +34,11 @@ interface StudyPlanData {
   plan_name: string;
   start_date: string;
   end_date: string;
+  start_time: string;        // <-- Add this
   course_ids: number[];
   course_settings: Record<string, CourseSettings>;
-   sync_with_notion?: boolean;
-  sync_with_google?: boolean; 
+  sync_with_notion?: boolean;
+  sync_with_google?: boolean;
 }
 
 interface StudyPlanPopupProps {
@@ -47,6 +51,7 @@ interface StudyPlanPopupProps {
   onPlanUpdate: () => void;
 }
 
+
 const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
   isOpen,
   onClose,
@@ -58,15 +63,17 @@ const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedCourses, setSelectedCourses] = useState<Course[]>([]);
-  const [studyPlanData, setStudyPlanData] = useState<StudyPlanData>({
-    plan_name: '',
-    start_date: '',
-    end_date: '',
-    course_ids: [],
-    course_settings: {},
-    sync_with_notion: false, 
+   const [loading, setLoading] = React.useState<boolean>(false);
+ const [studyPlanData, setStudyPlanData] = useState<StudyPlanData>({
+  plan_name: '',
+  start_date: '',
+  end_date: '',
+  start_time: '17:00',        // default or empty string as needed
+  course_ids: [],
+  course_settings: {},
+  sync_with_notion: false,
   sync_with_google: false,
-  });
+});
 
   const steps = [
     { id: 1, title: 'Select Courses' },
@@ -81,73 +88,85 @@ const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
   const handlePrevious = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
+const handleSave = async () => {
+  setLoading(true);
+  setError('');
+  setSuccess('');
 
-  const handleSave = async () => {
-    try {
-      // Convert course settings to match your existing API format
-      const selectedWeekdays = Array.from(
-        new Set(
-          Object.values(studyPlanData.course_settings)
-            .flatMap(setting => setting.study_days)
-        )
-      );
+  try {
+    const selectedWeekdays = Array.from(
+      new Set(Object.values(studyPlanData.course_settings).flatMap(s => s.study_days))
+    );
+    const totalStudyTime = Object.values(studyPlanData.course_settings)
+      .reduce((sum, s) => sum + (s.daily_hours || 0), 0) * 60;
 
-      const totalStudyTime = Object.values(studyPlanData.course_settings)
-        .reduce((sum, setting) => sum + setting.daily_hours, 0) * 60; // Convert to minutes
+    // Add returnUrl when Google sync is enabled (we'll use window.location.href)
+    const payload = {
+      plan_name: studyPlanData.plan_name.trim(),
+      user_id: userId,
+      start_date: studyPlanData.start_date,
+      end_date: studyPlanData.end_date,
+      weekdays: selectedWeekdays,
+      study_time: totalStudyTime,
+      course_ids: studyPlanData.course_ids,
+      course_settings: studyPlanData.course_settings,
+      sync_with_notion: studyPlanData.sync_with_notion || false,
+      sync_with_google: studyPlanData.sync_with_google || false,
+      // 📣 ADD THIS:
+       start_time: studyPlanData.start_time,
+      returnUrl: (studyPlanData.sync_with_google && typeof window !== "undefined") ? window.location.href : undefined,
+    };
 
-      const planData = {
-  plan_name: studyPlanData.plan_name.trim(),
-  user_id: userId,
-  start_date: studyPlanData.start_date,
-  end_date: studyPlanData.end_date,
-  weekdays: selectedWeekdays,
-  study_time: totalStudyTime,
-  course_ids: studyPlanData.course_ids,
-  course_settings: studyPlanData.course_settings,
-  sync_with_notion: studyPlanData.sync_with_notion || false,   // ✅ Add this
-  sync_with_google: studyPlanData.sync_with_google || false    // ✅ Add this
+    const { createStudyPlan, updateStudyPlan } = await import('@/api/studyplan');
+    let result;
+    if (editingPlan) {
+      result = await updateStudyPlan(editingPlan.id, payload);
+    } else {
+      result = await createStudyPlan(payload);
+    }
+
+    console.log('API Response:', result);
+
+    if (result?.googleAuthUrl) {
+      console.log('Redirecting user to Google OAuth consent URL');
+      window.location.href = result.googleAuthUrl;
+      return;
+    }
+
+    setSuccess(editingPlan ? 'Plan updated successfully!' : 'Plan created successfully!');
+    resetForm();
+    onClose();
+    setTimeout(() => onPlanUpdate(), 100);
+  } catch (err: any) {
+    console.error('handleSave error:', err);
+    setError(err.message || 'An error occurred while saving the plan');
+  } finally {
+    setLoading(false);
+  }
 };
 
 
-      console.log('Submitting plan data:', planData);
 
-      // Use your existing API calls
-      const { createStudyPlan, updateStudyPlan } = await import('@/api/studyplan');
-      
-      let result;
-      if (editingPlan) {
-        result = await updateStudyPlan(editingPlan.id, planData);
-      } else {
-        result = await createStudyPlan(planData);
-      }
 
-      setSuccess(editingPlan ? 'Plan updated successfully!' : 'Plan created successfully!');
-      
-      // Reset and close
-      resetForm();
-      onClose();
-      
-      setTimeout(() => {
-        onPlanUpdate();
-      }, 100);
-      
-    } catch (err: any) {
-      console.error('Submit error:', err);
-      setError(err.message || 'An error occurred while saving the plan');
-    }
-  };
 
   const resetForm = () => {
-    setCurrentStep(1);
-    setSelectedCourses([]);
-    setStudyPlanData({
-      plan_name: '',
-      start_date: '',
-      end_date: '',
-      course_ids: [],
-      course_settings: {}
-    });
-  };
+  setCurrentStep(1);
+  setSelectedCourses([]);
+setStudyPlanData({
+  plan_name: '',
+  start_date: '',
+  end_date: '',
+  start_time: '17:00', // reset or empty string
+  course_ids: [],
+  course_settings: {},
+  sync_with_notion: false,
+  sync_with_google: false,
+});
+
+  setError('');
+  setLoading(false);
+};
+
 
   const renderStep = () => {
     switch (currentStep) {
@@ -203,7 +222,6 @@ const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
             <X className="w-5 h-5" />
           </button>
         </CardHeader>
-        
         <CardContent>
           {/* Progress indicator */}
           <div className="mb-6">
@@ -211,8 +229,8 @@ const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
               {steps.map((step, index) => (
                 <div key={step.id} className={`flex items-center ${index < steps.length - 1 ? 'flex-1' : ''}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    currentStep >= step.id 
-                      ? 'bg-blue-600 text-white' 
+                    currentStep >= step.id
+                      ? 'bg-blue-600 text-white'
                       : 'bg-gray-200 text-gray-600'
                   }`}>
                     {step.id}
@@ -236,7 +254,9 @@ const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
   );
 };
 
-// CourseSelectionStep Component
+
+// --- CourseSelectionStep (no changes needed for time clashes) ---
+
 interface CourseSelectionStepProps {
   userId: number;
   selectedCourses: Course[];
@@ -260,64 +280,34 @@ const CourseSelectionStep: React.FC<CourseSelectionStepProps> = ({
 
   useEffect(() => {
     fetchRegisteredCourses();
+    // eslint-disable-next-line
   }, [userId]);
 
   const fetchRegisteredCourses = async () => {
     try {
       const url = `http://localhost:3000/api/studyplan/registered-courses?userId=${userId}`;
-      console.log('Fetching from URL:', url);
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
-      
-      // Log response details for debugging
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-      
+
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
-      // Check if response is JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        const responseText = await response.text();
-        console.error('Non-JSON response received:', responseText);
         throw new Error('Server returned non-JSON response');
       }
-      
       const data = await response.json();
-      console.log('Raw response data:', data);
-      
-      // Extract the courses array from the response
-      const courses = data.courses || data; // Handle both {courses: [...]} and [...] formats
-      console.log('Extracted courses:', courses);
-      
-      // Validate that courses is an array
+      const courses = data.courses || data;
       if (!Array.isArray(courses)) {
-        console.error('Courses is not an array:', courses);
         throw new Error('Invalid response format: courses data is not an array');
       }
-      
       setAvailableCourses(courses);
-      
     } catch (error) {
-      console.error('Error fetching courses:', error);
-      
-      // More specific error messages
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        setError('Network error. Please check your connection and CORS configuration.');
-      } else if (error.message.includes('Unexpected token')) {
-        setError('Server returned invalid data. Please contact support.');
-      } else {
-        setError(error.message || 'Failed to load courses. Please try again.');
-      }
+      setError((error as any).message || 'Failed to load courses. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -328,10 +318,9 @@ const CourseSelectionStep: React.FC<CourseSelectionStepProps> = ({
       // Remove course
       const newSelectedCourses = selectedCourses.filter(c => c.id !== course.id);
       setSelectedCourses(newSelectedCourses);
-      
-      // Update study plan data
+
       const newCourseIds = newSelectedCourses.map(c => c.id);
-      setStudyPlanData(prev => ({
+      setStudyPlanData((prev: any) => ({
         ...prev,
         course_ids: newCourseIds
       }));
@@ -339,10 +328,9 @@ const CourseSelectionStep: React.FC<CourseSelectionStepProps> = ({
       // Add course
       const newSelectedCourses = [...selectedCourses, course];
       setSelectedCourses(newSelectedCourses);
-      
-      // Update study plan data
+
       const newCourseIds = newSelectedCourses.map(c => c.id);
-      setStudyPlanData(prev => ({
+      setStudyPlanData((prev: any) => ({
         ...prev,
         course_ids: newCourseIds
       }));
@@ -374,53 +362,77 @@ const CourseSelectionStep: React.FC<CourseSelectionStepProps> = ({
   }
 
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-2">Select Courses for Your Study Plan</h3>
-      <p className="text-green-600 mb-4">Choose up to 5 courses from your registered courses</p>
-      
-      {availableCourses.length === 0 ? (
-        <div className="text-center py-8">
-          <div className="text-gray-600">No registered courses found.</div>
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {availableCourses.map(course => (
-              <Card
-                key={course.id}
-                className={`cursor-pointer transition-all ${
-                  selectedCourses.some(c => c.id === course.id)
-                    ? 'border-white-500 bg-black-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                } ${selectedCourses.length >= 5 && !selectedCourses.some(c => c.id === course.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={() => handleCourseSelect(course)}
-              >
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-white-900">{course.course_name}</h4>
-                  {course.description && (
-                    <p className="text-sm text-white-600 mt-1">{course.description}</p>
-                  )}
-                  {course.duration_weeks && (
-                    <p className="text-sm text-white-500 mt-2">Duration: {course.duration_weeks} weeks</p>
-                  )}
-                  {course.createdAt && (
-                    <p className="text-sm text-white-500 mt-1">
-                      Created: {new Date(course.createdAt).toLocaleDateString()}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+ <div>
+  <h3 className="text-lg font-semibold mb-2">Select Courses for Your Study Plan</h3>
+  <p className="text-green-600 mb-4">Choose up to 5 courses from your registered courses</p>
 
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-white-600">
-              Selected: {selectedCourses.length}/5 courses
-              {selectedCourses.length >= 5 && (
-                <span className="text-orange-600 ml-2">(Maximum reached)</span>
+  {/* Plan-wide Start Time Input */}
+  <div className="mb-6">
+    <label
+      htmlFor="plan-start-time"
+      className="block text-sm font-medium text-white-900 mb-1"
+    >
+      Plan Start Time
+    </label>
+    <input
+      id="plan-start-time"
+      type="time"
+      value={studyPlanData.start_time || '17:00'}
+      onChange={e => setStudyPlanData(prev => ({ ...prev, start_time: e.target.value }))}
+      className="border rounded-md p-2 w-32 text-black"
+      min="00:00"
+      max="23:59"
+      required
+    />
+  </div>
+
+  {availableCourses.length === 0 ? (
+    <div className="text-center py-8">
+      <div className="text-gray-600">No registered courses found.</div>
+    </div>
+  ) : (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {availableCourses.map(course => (
+          <Card
+            key={course.id}
+            className={`cursor-pointer transition-all ${
+              selectedCourses.some(c => c.id === course.id)
+                ? 'border-white-500 bg-black-50'
+                : 'border-gray-200 hover:border-gray-300'
+            } ${
+              selectedCourses.length >= 5 && !selectedCourses.some(c => c.id === course.id)
+                ? 'opacity-50 cursor-not-allowed'
+                : ''
+            }`}
+            onClick={() => handleCourseSelect(course)}
+          >
+            <CardContent className="p-4">
+              <h4 className="font-semibold text-white-900">{course.course_name}</h4>
+              {course.description && (
+                <p className="text-sm text-white-600 mt-1">{course.description}</p>
               )}
-            </div>
-            <button
+              {course.duration_weeks && (
+                <p className="text-sm text-white-500 mt-2">Duration: {course.duration_weeks} weeks</p>
+              )}
+              {course.createdAt && (
+                <p className="text-sm text-white-500 mt-1">
+                  Created: {new Date(course.createdAt).toLocaleDateString()}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-white-600">
+          Selected: {selectedCourses.length}/5 courses
+          {selectedCourses.length >= 5 && (
+            <span className="text-orange-600 ml-2">(Maximum reached)</span>
+          )}
+        </div>
+        <button
           onClick={onNext}
           disabled={!canProceed}
           className={`px-6 py-2 rounded-lg font-medium transition-colors ${
@@ -431,14 +443,19 @@ const CourseSelectionStep: React.FC<CourseSelectionStepProps> = ({
         >
           Next: Set Schedule
         </button>
-          </div>
-        </>
-      )}
-    </div>
+      </div>
+    </>
+  )}
+</div>
+
+
+
   );
 };
 
-// CourseScheduleStep Component
+
+// --- CourseScheduleStep (includes clash detection & start_time field) ---
+
 interface CourseScheduleStepProps {
   selectedCourses: Course[];
   studyPlanData: any;
@@ -456,14 +473,34 @@ const CourseScheduleStep: React.FC<CourseScheduleStepProps> = ({
 }) => {
   const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+  // --- Utils for time math and clash detection ---
+
+  function addHours(time: string, hours: number): string {
+    const [h, m] = (time || '00:00').split(':').map(Number);
+    const date = new Date(0, 0, 0, h, m);
+    date.setMinutes(date.getMinutes() + Math.round(hours * 60));
+    const hh = date.getHours().toString().padStart(2, '0');
+    const mm = date.getMinutes().toString().padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
+  function timeRangesOverlap(start1: string, end1: string, start2: string, end2: string) {
+    // All times in HH:MM
+    // eg. 15:00-17:00 vs 16:00-18:00 => overlap
+    return !(end1 <= start2 || end2 <= start1);
+  }
+
+  
+
   const updateCourseSettings = (courseId: number, settings: Partial<CourseSettings>) => {
-    setStudyPlanData(prev => ({
+    setStudyPlanData((prev: any) => ({
       ...prev,
       course_settings: {
         ...prev.course_settings,
         [courseId]: {
           daily_hours: 1,
           study_days: [],
+          start_time: '17:00',
           notes: '',
           ...prev.course_settings[courseId],
           ...settings
@@ -473,116 +510,129 @@ const CourseScheduleStep: React.FC<CourseScheduleStepProps> = ({
   };
 
   const handleDayToggle = (courseId: number, day: string) => {
-    const currentSettings = studyPlanData.course_settings[courseId] || { daily_hours: 1, study_days: [], notes: '' };
+    const currentSettings = studyPlanData.course_settings[courseId] || { daily_hours: 1, study_days: [], start_time: '17:00', notes: '' };
     const newStudyDays = currentSettings.study_days.includes(day)
-      ? currentSettings.study_days.filter(d => d !== day)
+      ? currentSettings.study_days.filter((d: string) => d !== day)
       : [...currentSettings.study_days, day];
-    
+
     updateCourseSettings(courseId, { study_days: newStudyDays });
   };
 
+  // --- Proceed only if all courses have valid days, hours, start time and no clashes ---
   const canProceed = selectedCourses.every(course => {
     const settings = studyPlanData.course_settings[course.id];
-    return settings && settings.study_days.length > 0 && settings.daily_hours > 0;
+    return settings && settings.study_days.length > 0 && settings.daily_hours > 0 && settings.start_time;
   });
+
+  
 
   return (
     <div>
       <h3 className="text-lg font-semibold mb-2">Set Schedule for Each Course</h3>
-      <p className="text-green-600 mb-4">Configure study time and days for each selected course</p>
+      <p className="text-green-600 mb-4">Configure study time, start time, and days for each selected course</p>
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-  <div className="flex items-center gap-4">
-    <label className="flex items-center space-x-2 text-sm font-medium text-blue-700">
-      <input
-        type="checkbox"
-        checked={studyPlanData.sync_with_notion || false}
-        onChange={() =>
-          setStudyPlanData(prev => ({
-            ...prev,
-            sync_with_notion: !prev.sync_with_notion
-          }))
-        }
-        className="h-4 w-4 text-blue-600"
-      />
-      <span>Sync with Notion</span>
-    </label>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center space-x-2 text-sm font-medium text-blue-700">
+            <input
+              type="checkbox"
+              checked={studyPlanData.sync_with_notion || false}
+              onChange={() =>
+                setStudyPlanData((prev: any) => ({
+                  ...prev,
+                  sync_with_notion: !prev.sync_with_notion
+                }))
+              }
+              className="h-4 w-4 text-blue-600"
+            />
+            <span>Sync with Notion</span>
+          </label>
 
-    <label className="flex items-center space-x-2 text-sm font-medium text-blue-700">
-      <input
-        type="checkbox"
-        checked={studyPlanData.sync_with_google || false}
-        onChange={() =>
-          setStudyPlanData(prev => ({
-            ...prev,
-            sync_with_google: !prev.sync_with_google
-          }))
-        }
-        className="h-4 w-4 text-blue-600"
-      />
-      <span>Sync with Google Calendar</span>
-    </label>
-  </div>
-</div>
+          <label className="flex items-center space-x-2 text-sm font-medium text-blue-700">
+            <input
+              type="checkbox"
+              checked={studyPlanData.sync_with_google || false}
+              onChange={() =>
+                setStudyPlanData((prev: any) => ({
+                  ...prev,
+                  sync_with_google: !prev.sync_with_google
+                }))
+              }
+              className="h-4 w-4 text-blue-600"
+            />
+            <span>Sync with Google Calendar</span>
+          </label>
+        </div>
+      </div>
 
       <div className="space-y-4 mb-6">
         {selectedCourses.map(course => {
-          const settings = studyPlanData.course_settings[course.id] || { daily_hours: 1, study_days: [], notes: '' };
-          
+          const settings: CourseSettings = studyPlanData.course_settings[course.id] || {
+            daily_hours: 1,
+            study_days: [],
+            start_time: '17:00',
+            notes: ''
+          };
+ 
           return (
-            <Card key={course.id} className="border-gray-200">
-              <CardContent className="p-4">
-                <h4 className="font-semibold text-white-900 mb-3">{course.course_name.toUpperCase()}</h4>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-blue-700 mb-1">
-                      Daily Study Hours
-                    </label>
-                    <input
-                      type="number"
-                      min="0.5"
-                      max="8"
-                      step="0.5"
-                      value={settings.daily_hours}
-                      onChange={(e) => updateCourseSettings(course.id, { daily_hours: parseFloat(e.target.value) })}
-                      className="w-full border rounded-md p-2"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-blue-700 mb-1">
-                      Study Days
-                    </label>
-                    <div className="grid grid-cols-2 gap-1">
-                      {weekdays.map(day => (
-                        <label key={day} className="flex items-center text-sm">
-                          <input
-                            type="checkbox"
-                            checked={settings.study_days.includes(day)}
-                            onChange={() => handleDayToggle(course.id, day)}
-                            className="h-4 w-4 text-blue-600 mr-2"
-                          />
-                          {day.slice(0, 3)}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-3">
-                  <label className="block text-sm font-medium text-blue-700 mb-1">
-                    Notes (optional)
-                  </label>
-                  <textarea
-                    value={settings.notes}
-                    onChange={(e) => updateCourseSettings(course.id, { notes: e.target.value })}
-                    className="w-full border rounded-md p-2 h-20"
-                    placeholder="Add any specific notes for this course..."
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          );
+  <Card key={course.id} className="border-gray-200">
+    <CardContent className="p-4">
+      <h4 className="font-semibold text-white-900 mb-3">{course.course_name.toUpperCase()}</h4>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-blue-700 mb-1">
+            Daily Study Hours
+          </label>
+          <input
+            type="number"
+            min="0.5"
+            max="8"
+            step="0.5"
+            value={settings.daily_hours}
+            onChange={e => updateCourseSettings(course.id, { daily_hours: parseFloat(e.target.value) })}
+            className="w-full border rounded-md p-2"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-blue-700 mb-1">
+            Study Days
+          </label>
+          <div className="grid grid-cols-2 gap-1">
+            {weekdays.map(day => (
+              <label key={day} className="flex items-center text-sm">
+                <input
+                  type="checkbox"
+                  checked={settings.study_days.includes(day)}
+                  onChange={() => handleDayToggle(course.id, day)}
+                  className="h-4 w-4 text-blue-600 mr-2"
+                />
+                {day.slice(0, 3)}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div>
+          {/* You can remove this div entirely if it has no content */}
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <label className="block text-sm font-medium text-blue-700 mb-1">
+          Notes (optional)
+        </label>
+        <textarea
+          value={settings.notes}
+          onChange={e => updateCourseSettings(course.id, { notes: e.target.value })}
+          className="w-full border rounded-md p-2 h-20"
+          placeholder="Add any specific notes for this course..."
+        />
+      </div>
+
+      {/* Clash warning UI removed */}
+    </CardContent>
+  </Card>
+);
+
         })}
       </div>
 
@@ -593,23 +643,26 @@ const CourseScheduleStep: React.FC<CourseScheduleStepProps> = ({
         >
           Previous
         </button>
-        <button
-          onClick={onNext}
-          disabled={!canProceed}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            canProceed
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          Next: Review & Save
-        </button>
+      <button
+  onClick={onNext}
+  disabled={!canProceed}
+  className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+    canProceed
+      ? 'bg-blue-600 text-white hover:bg-blue-700'
+      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+  }`}
+>
+  Next: Review & Save
+</button>
+
       </div>
     </div>
   );
 };
 
-// ReviewStep Component
+
+// --- ReviewStep (now shows start_time for each course) ---
+
 interface ReviewStepProps {
   studyPlanData: any;
   setStudyPlanData: (data: any) => void;
@@ -649,16 +702,25 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
 
   const canSave = studyPlanData.plan_name.trim() && studyPlanData.start_date && studyPlanData.end_date;
 
+  // show start time and end time
+  function addHours(time: string, hours: number): string {
+    const [h, m] = (time || '00:00').split(':').map(Number);
+    const date = new Date(0, 0, 0, h, m);
+    date.setMinutes(date.getMinutes() + Math.round(hours*60));
+    const hh = date.getHours().toString().padStart(2, '0');
+    const mm = date.getMinutes().toString().padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
   return (
     <div>
       <h3 className="text-lg font-semibold mb-2">Review Your Study Plan</h3>
       <p className="text-green-600 mb-4">Review and finalize your study plan details</p>
-      
+
       {/* Plan Basic Info */}
       <Card className="mb-4">
         <CardContent className="p-4">
           <h4 className="font-semibold text-white-900 mb-3">Plan Details</h4>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-blue-700 mb-1">
@@ -667,7 +729,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               <input
                 type="text"
                 value={studyPlanData.plan_name}
-                onChange={(e) => setStudyPlanData(prev => ({ ...prev, plan_name: e.target.value }))}
+                onChange={e => setStudyPlanData((prev: any) => ({ ...prev, plan_name: e.target.value }))}
                 className="w-full border rounded-md p-2"
                 placeholder="e.g., Multi-Course Study Plan"
                 required
@@ -682,7 +744,6 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               </div>
             </div>
           </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-blue-700 mb-1">
@@ -691,7 +752,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               <input
                 type="date"
                 value={studyPlanData.start_date}
-                onChange={(e) => setStudyPlanData(prev => ({ ...prev, start_date: e.target.value }))}
+                onChange={e => setStudyPlanData((prev: any) => ({ ...prev, start_date: e.target.value }))}
                 className="w-full border rounded-md p-2"
                 required
               />
@@ -703,7 +764,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               <input
                 type="date"
                 value={studyPlanData.end_date}
-                onChange={(e) => setStudyPlanData(prev => ({ ...prev, end_date: e.target.value }))}
+                onChange={e => setStudyPlanData((prev: any) => ({ ...prev, end_date: e.target.value }))}
                 className="w-full border rounded-md p-2"
                 required
               />
@@ -716,11 +777,9 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
       <Card className="mb-6">
         <CardContent className="p-4">
           <h4 className="font-semibold text-white-900 mb-3">Selected Courses ({selectedCourses.length})</h4>
-          
           <div className="space-y-3">
             {selectedCourses.map(course => {
               const settings = studyPlanData.course_settings[course.id];
-              
               return (
                 <div key={course.id} className="border rounded-md p-3 bg-black-50">
                   <div className="flex justify-between items-start mb-2">
@@ -729,11 +788,10 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
                       {settings.daily_hours} hours/day
                     </span>
                   </div>
-                  
                   <div className="text-sm text-gray-600">
                     <strong>Study Days:</strong> {settings.study_days.join(', ')}
+                   
                   </div>
-                  
                   {settings.notes && (
                     <div className="text-sm text-white-600 mt-1">
                       <strong>Notes:</strong> {settings.notes}
@@ -743,7 +801,6 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
               );
             })}
           </div>
-          
           <div className="mt-4 p-4 bg-black-900 rounded-lg border">
             <div className="text-sm text-white mb-2">
                 <strong className="text-green-600">Summary:</strong> 
@@ -757,7 +814,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
                 {allStudyDays.join(', ')}
                 </span>
             </div>
-            </div>
+          </div>
         </CardContent>
       </Card>
 

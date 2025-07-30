@@ -9,6 +9,8 @@ const studyPlanRoutes = require('./routes/studyPlan.routes');
 const studyProgressRoutes = require('./routes/studyProgress');
 const path = require('path');
 
+
+
 // --- 🚦 Sanity check for env ---
 if (!process.env.DB_NAME || !process.env.DB_PASSWORD) {
   console.error('Missing essential environment variables. Check .env file.');
@@ -68,6 +70,8 @@ const io = new Server(http, {
     credentials: true,
   }
 });
+
+
 
 // --- SOCKET.IO LOGIC (basic chat) ---
 const { GroupMessage, User } = require('./models'); // adjust as needed

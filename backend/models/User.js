@@ -25,11 +25,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-    google_tokens: {
-      type: DataTypes.JSONB,
-      allowNull: true,
+    sync_with_notion: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
-    google_calendar_connected: {
+    sync_with_google: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
     updatedAt: 'updated_at',
   });
 
-  User.associate = models => {
+  User.associate = (models) => {
     User.hasMany(models.Course, { foreignKey: 'user_id_foreign_key' });
     User.hasMany(models.Streak, { foreignKey: 'user_id' });
     User.hasMany(models.StudyPlan, { foreignKey: 'user_id_foreign_key' });
@@ -46,47 +46,14 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.AssessmentScore, { foreignKey: 'user_id_foreign_key' });
     User.hasMany(models.ToDoList, { foreignKey: 'user_id_foreign_key' });
 
-    // ⬇️ Follow Relationships
-    User.belongsToMany(models.User, {
-      through: models.Follow,
-      as: "Followers",
-      foreignKey: "followingId",
-      otherKey: "followerId"
+    // Follow relationships omitted here for brevity (keep as you have them)
+
+    // One-to-one with GoogleToken:
+    User.hasOne(models.GoogleToken, {
+      foreignKey: 'user_id',
+      as: 'googleToken',  // Alias used for eager loading (must match include)
     });
-
-    User.belongsToMany(models.User, {
-      through: models.Follow,
-      as: "Following",
-      foreignKey: "followerId",
-      otherKey: "followingId"
-    });
-
-    // ⬇️ Direct Follow associations for eager loading
-    User.hasMany(models.Follow, { foreignKey: 'followerId', as: 'FollowingFollows' });
-    User.hasMany(models.Follow, { foreignKey: 'followingId', as: 'FollowerFollows' });
-
-    // Follow Requests
-    User.belongsToMany(models.User, {
-      through: models.FollowRequest,
-      as: "RequestedFollowers",
-      foreignKey: "followingId"
-    });
-
-    User.belongsToMany(models.User, {
-      through: models.FollowRequest,
-      as: "RequestedFollowing",
-      foreignKey: "followerId"
-    });
-    User.hasMany(models.StudyPlan, { foreignKey: 'user_id_foreign_key' });
- 
-     User.hasMany(models.Group, { foreignKey: 'created_by' }); // Groups created by this user
-    User.hasMany(models.GroupMember, { foreignKey: 'user_id' }); // Memberships
-    User.hasMany(models.GroupJoinRequest, { foreignKey: 'user_id' }); // Join requests
-    User.hasMany(models.GroupMessage, { foreignKey: 'sender_id' }); // Messages sent
-    User.hasMany(models.GroupFile, { foreignKey: 'user_id' }); // Files uploaded
-
   };
-
 
   return User;
 };

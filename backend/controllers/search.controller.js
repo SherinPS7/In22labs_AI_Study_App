@@ -2,7 +2,7 @@ const { Op } = require('sequelize');
 const { User, Group, StudyPlan, Course } = require('../models');
 
 exports.searchMulti = async (req, res) => {
-  const query = req.query.query?.trim(); // ✅ fixed here
+  const query = req.query.query?.trim();
 
   if (!query) return res.status(400).json({ error: 'Search query is required' });
 
@@ -20,9 +20,9 @@ exports.searchMulti = async (req, res) => {
 
       Group.findAll({
         where: {
-          name: { [Op.iLike]: `%${query}%` },
+          group_name: { [Op.iLike]: `%${query}%` },  // <-- corrected column name
         },
-        attributes: ['id', 'name']
+        attributes: ['id', 'group_name']  // <-- corrected attribute name
       }),
 
       StudyPlan.findAll({
@@ -40,9 +40,10 @@ exports.searchMulti = async (req, res) => {
       })
     ]);
 
-    res.json({ users, groups, studyPlans, courses }); // 👈 renamed 'plans' to 'studyPlans' for frontend consistency
+    res.json({ users, groups, studyPlans, courses });
   } catch (error) {
     console.error('❌ Error in searchMulti:', error);
     res.status(500).json({ error: 'Search failed on server' });
   }
 };
+

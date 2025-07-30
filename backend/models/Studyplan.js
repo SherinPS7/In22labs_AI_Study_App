@@ -16,9 +16,9 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     group_id: {
-  type: DataTypes.INTEGER,
-  allowNull: true
-},
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
 
     start_date: {
       type: DataTypes.DATEONLY,
@@ -37,6 +37,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+
+    // New column to store study plan start time (clock time as "HH:mm")
+    start_time: {
+      type: DataTypes.STRING,       // Store time as "HH:mm" string
+      allowNull: true,              // Make it nullable if optional
+      validate: {
+        is: /^([01]\d|2[0-3]):([0-5]\d)$/  // Validates "HH:mm" format
+      }
+    },
+
     course_ids: {
       type: DataTypes.JSON,
       allowNull: true,
@@ -52,17 +62,18 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: 0
     },
-    // ✅ NEW FIELDS
-    sync_with_notion: {
-      type: DataTypes.BOOLEAN,
+   
+    save_count: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: false
+      defaultValue: 0,
     },
-    sync_with_google: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false
-    }
+    google_event_id: {
+      type: DataTypes.STRING,
+      allowNull: true,  // can be null if no Google event created
+    },
+
+
   }, {
     tableName: 'StudyPlans', 
     timestamps: true,

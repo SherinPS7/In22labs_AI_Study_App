@@ -87,7 +87,7 @@ const ContinueLearning = () => {
           >
             {/* Clickable gradient area with course title */}
             <a
-              href={`http://localhost:5173/course/${course.id}`}
+              href={`http://localhost:3000/course/${course.id}`}
               target="_blank"
               rel="noopener noreferrer"
               className="relative h-48 flex items-center justify-center text-white"

@@ -1,14 +1,15 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { format } from "date-fns";
 import {
-  
   Share2,
   UserPlus,
   UserCheck,
   UserX,
+  Edit,
 } from "lucide-react";
 import { toast } from "sonner";
+
 import {
   Avatar,
   AvatarFallback,
@@ -28,8 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { QRCodeSVG } from 'qrcode.react';
-
+import { QRCodeSVG } from "qrcode.react";
 
 interface MinimalUser {
   id: number;
@@ -61,15 +61,8 @@ interface Props {
 
 const BASE_URL = "http://localhost:3000";
 
-export default function UserProfileCard({
-  user,
-  isOwnProfile,
-  onUpdate,
-}: Props) {
-
-  // State for QR modal
+export default function UserProfileCard({ user, isOwnProfile, onUpdate }: Props) {
   const [showShareDialog, setShowShareDialog] = useState(false);
-
   const [state, setState] = useState({
     isFollowing: user.is_following ?? false,
     hasPendingRequest: user.has_pending_request ?? false,
@@ -90,24 +83,17 @@ export default function UserProfileCard({
       .join("")
       .toUpperCase();
 
-  // The shareable public profile link
-  const profileLink = `${window.location.origin}/profile/${user.id}`;
-
-  // ... your handlers remain unchanged ...
+  // Handlers
 
   const handleFollowAction = async () => {
-    setState((prev) => ({ ...prev, loading: true }));
+    setState(prev => ({ ...prev, loading: true }));
     try {
       if (state.hasPendingRequest) {
         await axios.delete(`${BASE_URL}/api/profile/requests/${user.id}`, {
           withCredentials: true,
         });
         toast.success("Follow request canceled");
-        setState((prev) => ({
-          ...prev,
-          hasPendingRequest: false,
-          loading: false,
-        }));
+        setState(prev => ({ ...prev, hasPendingRequest: false, loading: false }));
       } else {
         await axios.post(
           `${BASE_URL}/api/profile/follow/${user.id}`,
@@ -116,39 +102,31 @@ export default function UserProfileCard({
         );
         if (state.isPublic) {
           toast.success("Followed successfully");
-          setState((prev) => ({
-            ...prev,
-            isFollowing: true,
-            loading: false,
-          }));
+          setState(prev => ({ ...prev, isFollowing: true, loading: false }));
         } else {
           toast.success("Follow request sent");
-          setState((prev) => ({
-            ...prev,
-            hasPendingRequest: true,
-            loading: false,
-          }));
+          setState(prev => ({ ...prev, hasPendingRequest: true, loading: false }));
         }
       }
       onUpdate?.();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "Follow action failed");
-      setState((prev) => ({ ...prev, loading: false }));
+      setState(prev => ({ ...prev, loading: false }));
     }
   };
 
   const handleUnfollow = async () => {
-    setState((prev) => ({ ...prev, loading: true }));
+    setState(prev => ({ ...prev, loading: true }));
     try {
       await axios.delete(`${BASE_URL}/api/profile/unfollow/${user.id}`, {
         withCredentials: true,
       });
       toast.success("Unfollowed successfully");
-      setState((prev) => ({ ...prev, isFollowing: false, loading: false }));
+      setState(prev => ({ ...prev, isFollowing: false, loading: false }));
       onUpdate?.();
-    } catch (err) {
+    } catch {
       toast.error("Failed to unfollow");
-      setState((prev) => ({ ...prev, loading: false }));
+      setState(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -161,7 +139,7 @@ export default function UserProfileCard({
         url = `${BASE_URL}/api/profile/${user.id}/${type}`;
       }
       const res = await axios.get(url, { withCredentials: true });
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         list: res.data || [],
         showDialog: true,
@@ -172,10 +150,7 @@ export default function UserProfileCard({
     }
   };
 
-  const handleRequestAction = async (
-    requestId: number,
-    action: "accept" | "reject"
-  ) => {
+  const handleRequestAction = async (requestId: number, action: "accept" | "reject") => {
     try {
       await axios.post(
         `${BASE_URL}/api/profile/requests/${action}/${requestId}`,
@@ -183,12 +158,12 @@ export default function UserProfileCard({
         { withCredentials: true }
       );
       toast.success(`Request ${action}ed`);
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
-        list: prev.list.filter((u) => u.id !== requestId),
+        list: prev.list.filter(u => u.id !== requestId),
       }));
       onUpdate?.();
-    } catch (err) {
+    } catch {
       toast.error("Failed to update request");
     }
   };
@@ -201,151 +176,148 @@ export default function UserProfileCard({
     ? { text: "Following", variant: "default" as const }
     : { text: "Follow", variant: "default" as const };
 
+  // Shareable profile link
+  const profileLink = `${window.location.origin}/profile/${user.id}`;
+
   return (
     <>
-     <Card>
-  <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-6">
-    <div className="flex items-center gap-4">
-      <Avatar className="w-20 h-20">
-        <AvatarImage
-          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`}
-        />
-        <AvatarFallback>
-          {getInitials(user.name)}
-        </AvatarFallback>
-      </Avatar>
-      <div>
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-2xl">{user.name}</CardTitle>
-          {!state.isPublic && (
-            <Badge variant="outline">Private</Badge>
-          )}
-        </div>
-        {isOwnProfile && (
-          <CardDescription>
-            {user.email || "No email available"}
-          </CardDescription>
-        )}
-        <p className="text-sm text-muted-foreground mt-1">
-          {user.bio || "No bio yet"}
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Joined {formatDate(user.joined_on)}
-        </p>
-      </div>
-    </div>
-
-    <div className="flex flex-col sm:flex-row gap-4 items-center">
-      <div className="flex gap-6 text-sm text-muted-foreground">
-        <button
-          className="flex flex-col items-center hover:text-foreground transition-colors"
-          onClick={() => handleViewList("followers")}
-        >
-          <span className="text-lg font-bold text-foreground">
-            {user.follower_count}
-          </span>
-          <span>Followers</span>
-        </button>
-        <button
-          className="flex flex-col items-center hover:text-foreground transition-colors"
-          onClick={() => handleViewList("following")}
-        >
-          <span className="text-lg font-bold text-foreground">
-            {user.following_count}
-          </span>
-          <span>Following</span>
-        </button>
-        {isOwnProfile && !state.isPublic && (
-          <button
-            className="flex flex-col items-center hover:text-foreground transition-colors"
-            onClick={() => handleViewList("requests")}
-          >
-            <span className="text-lg font-bold text-foreground">
-              {state.list.length}
-            </span>
-            <span>Requests</span>
-          </button>
-        )}
-      </div>
-
-      {!isOwnProfile && (
-        <div className="flex gap-2">
-          {state.isFollowing ? (
-            <Button
-              size="sm"
-              onClick={handleUnfollow}
-              disabled={state.loading}
-              variant="outline"
-            >
-              <UserX className="w-4 h-4 mr-2" /> Unfollow
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              onClick={handleFollowAction}
-              disabled={state.loading}
-              variant={followButtonState.variant}
-            >
-              {state.hasPendingRequest ? (
-                <UserCheck className="w-4 h-4 mr-2" />
-              ) : (
-                <UserPlus className="w-4 h-4 mr-2" />
+      <Card>
+        <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <Avatar className="w-20 h-20">
+              <AvatarImage
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`}
+                alt={`${user.name}'s avatar`}
+              />
+              <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-2xl font-semibold">{user.name}</CardTitle>
+                {!state.isPublic && <Badge variant="outline">Private</Badge>}
+              </div>
+              {isOwnProfile && (
+                <CardDescription>{user.email || "No email available"}</CardDescription>
               )}
-              {followButtonState.text}
-            </Button>
-          )}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setShowShareDialog(true)}
-          >
-            <Share2 className="w-4 h-4 mr-2" /> Share
-          </Button>
-        </div>
-      )}
-    </div>
-  </CardHeader>
-</Card>
+              <p className="text-sm text-muted-foreground mt-1">
+                {user.bio || "No bio yet"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Joined {formatDate(user.joined_on)}
+              </p>
+            </div>
+          </div>
 
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="flex gap-6 text-sm text-muted-foreground">
+              <button
+                className="flex flex-col items-center hover:text-foreground transition-colors"
+                onClick={() => handleViewList("followers")}
+              >
+                <span className="text-lg font-bold text-foreground">{user.follower_count}</span>
+                <span>Followers</span>
+              </button>
+              <button
+                className="flex flex-col items-center hover:text-foreground transition-colors"
+                onClick={() => handleViewList("following")}
+              >
+                <span className="text-lg font-bold text-foreground">{user.following_count}</span>
+                <span>Following</span>
+              </button>
+              {isOwnProfile && !state.isPublic && (
+                <button
+                  className="flex flex-col items-center hover:text-foreground transition-colors"
+                  onClick={() => handleViewList("requests")}
+                >
+                  <span className="text-lg font-bold text-foreground">{state.list.length}</span>
+                  <span>Requests</span>
+                </button>
+              )}
+            </div>
 
-      {/* QR/Share Dialog */}
-    
-<Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Share Profile</DialogTitle>
-    </DialogHeader>
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          readOnly
-          value={profileLink}
-          className="w-full border px-2 py-1 rounded text-sm"
-        />
-        <Button
-          size="sm"
-          onClick={() => {
-            navigator.clipboard.writeText(profileLink);
-            toast.success("Link copied!");
-          }}
-        >
-          Copy
-        </Button>
-      </div>
-      <div className="flex justify-center">
-        <QRCodeSVG value={profileLink} size={168} />
-      </div>
-    </div>
-  </DialogContent>
-</Dialog>
+            {!isOwnProfile && (
+              <div className="flex gap-2">
+                {state.isFollowing ? (
+                  <Button
+                    size="sm"
+                    onClick={handleUnfollow}
+                    disabled={state.loading}
+                    variant="outline"
+                    aria-label="Unfollow user"
+                  >
+                    <UserX className="w-4 h-4 mr-2" />
+                    Unfollow
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={handleFollowAction}
+                    disabled={state.loading}
+                    variant={followButtonState.variant}
+                    aria-label="Follow user"
+                  >
+                    {state.hasPendingRequest ? (
+                      <UserCheck className="w-4 h-4 mr-2" />
+                    ) : (
+                      <UserPlus className="w-4 h-4 mr-2" />
+                    )}
+                    {followButtonState.text}
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowShareDialog(true)}
+                  aria-label="Share profile"
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+      </Card>
 
+      {/* Share Profile Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>Share Profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={profileLink}
+                className="w-full border px-2 py-1 rounded text-sm select-all"
+                aria-label="Profile share link"
+                onFocus={e => e.target.select()}
+              />
+              <Button
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(profileLink);
+                  toast.success("Link copied!");
+                }}
+                aria-label="Copy profile link"
+              >
+                Copy
+              </Button>
+            </div>
+            <div className="flex justify-center">
+              <QRCodeSVG value={profileLink} size={168} />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-      {/* Follower/Following/Requests Dialog */}
+      {/* Followers/Following/Requests Dialog */}
       <Dialog
         open={state.showDialog}
-        onOpenChange={(open) =>
-          setState((prev) => ({ ...prev, showDialog: open }))
+        onOpenChange={open =>
+          setState(prev => ({ ...prev, showDialog: open }))
         }
       >
         <DialogContent>
@@ -393,9 +365,7 @@ export default function UserProfileCard({
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                {state.dialogType === "requests"
-                  ? "No pending requests"
-                  : `No ${state.dialogType} found`}
+                {state.dialogType === "requests" ? "No pending requests" : `No ${state.dialogType} found`}
               </p>
             )}
           </div>

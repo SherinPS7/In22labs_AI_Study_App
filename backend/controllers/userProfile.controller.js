@@ -1,4 +1,4 @@
-const { User, Follow, FollowRequest,QuizAttempt, Course } = require("../models");
+const { User, Follow, FollowRequest,QuizAttempt, Course, StudyPlan,sequelize } = require("../models");
 const { Op } = require("sequelize");
 
 // Helper: check if viewer can see target's follow lists
@@ -37,6 +37,8 @@ exports.getUserProfile = async (req, res) => {
         "following_count",
         "created_at",
         "updated_at",
+         "sync_with_notion",
+    "sync_with_google",
       ],
     });
 
@@ -60,6 +62,8 @@ exports.getUserProfile = async (req, res) => {
       following_count: user.following_count,
       joined_on: user.created_at,
       updated_at: user.updated_at,
+       sync_with_notion: user.sync_with_notion,
+  sync_with_google: user.sync_with_google,
       is_following: Boolean(isFollowing),
       has_pending_request: Boolean(hasPendingRequest),
     });
@@ -375,3 +379,146 @@ exports.getUserAccomplishments = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch accomplishments' });
   }
 };
+
+
+// Update Google Calendar sync flag
+exports.updateSyncWithGoogle = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId, 10);
+    const { sync_with_google } = req.body;
+
+    if (typeof sync_with_google !== "boolean") {
+      return res.status(400).json({ error: "sync_with_google must be a boolean" });
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    user.sync_with_google = sync_with_google;
+    await user.save();
+
+    res.json({ message: "Google sync setting updated", sync_with_google });
+  } catch (error) {
+    console.error("[updateSyncWithGoogle] Error:", error);
+    res.status(500).json({ error: "Failed to update Google sync setting" });
+  }
+};
+
+// Update Notion sync flag
+exports.updateSyncWithNotion = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId, 10);
+    const { sync_with_notion } = req.body;
+
+    if (typeof sync_with_notion !== "boolean") {
+      return res.status(400).json({ error: "sync_with_notion must be a boolean" });
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    user.sync_with_notion = sync_with_notion;
+    await user.save();
+
+    res.json({ message: "Notion sync setting updated", sync_with_notion });
+  } catch (error) {
+    console.error("[updateSyncWithNotion] Error:", error);
+    res.status(500).json({ error: "Failed to update Notion sync setting" });
+  }
+};
+
+
+
+exports.saveStudyPlanWithCourses = async (req, res) => {
+  // Start a transaction for atomic operation
+  const transaction = await sequelize.transaction();
+
+  try {
+    const userId = req.session.userId; // Get current logged-in user ID
+    const { planId } = req.params;     // Get the plan ID to duplicate
+
+    if (!userId) {
+      // User not authenticated
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Fetch the original study plan to duplicate
+    const originalPlan = await StudyPlan.findByPk(planId, { transaction });
+    if (!originalPlan) {
+      // No such plan exists
+      await transaction.rollback();
+      return res.status(404).json({ error: "Original study plan not found" });
+    }
+
+    // Create a duplicated plan record for the current user
+    const duplicatedPlan = await StudyPlan.create(
+      {
+        plan_name: originalPlan.plan_name + " (Copy)",
+        user_id: userId,
+        start_date: originalPlan.start_date,
+        end_date: originalPlan.end_date,
+        weekdays: originalPlan.weekdays,
+        study_time: originalPlan.study_time,
+        course_settings: originalPlan.course_settings,
+        course_count: originalPlan.course_count,
+        sync_with_notion: originalPlan.sync_with_notion,
+        sync_with_google: originalPlan.sync_with_google,
+        course_ids: [],    // will be populated after duplicating courses
+        save_count: 0,     // reset save count for new plan
+      },
+      { transaction }
+    );
+
+    const originalCourseIds = originalPlan.course_ids || [];
+    const newCourseIds = [];
+
+    // Loop through each course ID and duplicate the course
+    for (const origCourseId of originalCourseIds) {
+      const origCourse = await Course.findByPk(origCourseId, { transaction });
+      if (!origCourse) continue; // skip missing courses gracefully
+
+      // Duplicate the course record with new ownership (current user)
+      const duplicatedCourse = await Course.create(
+        {
+          course_name: origCourse.course_name,
+          user_id_foreign_key: userId,
+          ref_course_id: origCourse.id,           // reference original course
+          notion_template_db_id: origCourse.notion_template_db_id,
+        },
+        { transaction }
+      );
+
+      // Save the duplicated course ID to link with the duplicated plan
+      newCourseIds.push(duplicatedCourse.id);
+    }
+
+    // Update the duplicated study plan with new course IDs array and count
+    duplicatedPlan.course_ids = newCourseIds;
+    duplicatedPlan.course_count = newCourseIds.length;
+    await duplicatedPlan.save({ transaction });
+
+    // Increment save_count on original plan as popularity metric
+    originalPlan.save_count = (originalPlan.save_count || 0) + 1;
+    await originalPlan.save({ transaction });
+
+    // Commit the transaction if all operations succeed
+    await transaction.commit();
+
+    // Respond with success and duplicated plan info
+    return res.status(201).json({
+      message: "Study plan duplicated successfully",
+      newPlanId: duplicatedPlan.id,
+      duplicatedPlan,
+    });
+  } catch (error) {
+    // If any error occurs, rollback the transaction
+    if (transaction) await transaction.rollback();
+    console.error("Error duplicating study plan with courses:", error);
+    return res.status(500).json({ error: "Failed to duplicate study plan" });
+  }
+};
+
