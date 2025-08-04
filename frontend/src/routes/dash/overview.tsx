@@ -410,6 +410,47 @@ const Overview = () => {
         onPlanUpdate={handlePlanUpdate}
       />
 
+{showProgressModal && selectedProgress && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-black rounded-lg shadow-lg p-6 max-w-2xl w-full relative">
+      <button
+        className="absolute top-2 right-2 text-gray-500 hover:text-black"
+        onClick={() => setShowProgressModal(false)}
+      >
+        ✕
+      </button>
+      <h2 className="text-xl font-bold mb-4">
+        Progress for: {selectedProgress.planName}
+      </h2>
+
+      {selectedProgress.progress.length === 0 ? (
+        <p>No progress data available.</p>
+      ) : (
+        <div className="space-y-4">
+          {selectedProgress.progress.map((course) => (
+            <div key={course.courseId} className="border rounded p-4">
+              <h3 className="font-semibold">{course.courseName}</h3>
+              <p className="text-sm mb-2">
+                Watched: {course.watchedVideos} / {course.totalVideos}
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-green-500 h-3 rounded-full"
+                  style={{ width: `${(course.watchedVideos / course.totalVideos) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-xs mt-2 text-gray-500">
+                Daily: {course.settings?.daily_hours || 0} hr(s), Days: {course.settings?.study_days?.join(', ') || 'N/A'}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
+
       {/* Planner Section */}
       <Card className="mb-6 bg-gray shadow-lg">
         <CardContent>
