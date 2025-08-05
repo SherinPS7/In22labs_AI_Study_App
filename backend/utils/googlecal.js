@@ -93,63 +93,38 @@ exports.googleCallback = async (req, res) => {
  * @param {Object} eventData - Event details
  * @returns {Promise<string>} - Google Calendar event ID
  */
-async function createGoogleCalendarEvent(user, { summary, description, startTime, endTime, days, durationInDays }) {
+async function createGoogleCalendarEvent(user, { summary, description, startTime, endTime, days, durationDays }) {
+  if (!user) throw new Error('User is required');
+  if (!user.googleToken) throw new Error('User missing Google tokens');
+  if (!startTime || !endTime) throw new Error('Start and end time required');
+  if (!Array.isArray(days) || days.length === 0) throw new Error('Recurrence days required');
+  if (typeof durationDays !== 'number' || durationDays <= 0) throw new Error('durationDays must be positive');
+
   try {
-    if (!user) {
-      console.error('❌ User object is missing!');
-      throw new Error('User object is required');
-    }
-    if (!user.googleToken) {
-      console.error('❌ Google tokens missing on user:', user.id || 'unknown user id');
-      throw new Error('Google tokens missing for user');
-    }
-
-    if (!startTime || !endTime) {
-      console.warn('⚠️ startTime or endTime missing:', { startTime, endTime });
-      throw new Error('Event startTime and endTime are required');
-    }
-    if (!Array.isArray(days) || days.length === 0) {
-      console.warn('⚠️ Recurrence days not provided or empty:', days);
-      throw new Error('Recurrence days are required');
-    }
-    if (typeof durationInDays !== 'number' || durationInDays <= 0) {
-      console.warn('⚠️ Invalid durationInDays:', durationInDays);
-      throw new Error('durationInDays must be a positive number');
-    }
-
-    console.log('⏳ Setting OAuth credentials for Google API for user:', user.id);
-
     oauth2Client.setCredentials({
       access_token: user.googleToken.access_token,
       refresh_token: user.googleToken.refresh_token,
       expiry_date: user.googleToken.expiry_date,
     });
-    console.log('✅ OAuth credentials set');
+
+    // Refresh token if expired
+    await oauth2Client.getAccessToken();
 
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
     const todayStr = new Date().toISOString().split('T')[0];
-    console.log(`Event start date/time string: ${todayStr}T${startTime}`);
-    console.log(`Event end date/time string: ${todayStr}T${endTime}`);
-
     const eventStart = new Date(`${todayStr}T${startTime}:00+05:30`);
     const eventEnd = new Date(`${todayStr}T${endTime}:00+05:30`);
 
-    if (isNaN(eventStart) || isNaN(eventEnd) || eventStart >= eventEnd) {
-      console.error('❌ Invalid event start/end times:', { eventStart, eventEnd });
-      throw new Error('Invalid event start or end time');
-    }
+    if (eventStart >= eventEnd) throw new Error('Invalid event start and end times');
 
     const untilDate = new Date();
-    untilDate.setDate(untilDate.getDate() + durationInDays);
+    untilDate.setDate(untilDate.getDate() + durationDays);
     const untilStr = untilDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
     const recurrenceRule = `RRULE:FREQ=WEEKLY;BYDAY=${days.join(',')};UNTIL=${untilStr}`;
-    console.log(`Recurrence rule: ${recurrenceRule}`);
 
-    console.log(`Creating Google Calendar event with summary: "${summary}"`);
-
-    const response = await calendar.events.insert({
+    const res = await calendar.events.insert({
       calendarId: 'primary',
       resource: {
         summary,
@@ -157,24 +132,20 @@ async function createGoogleCalendarEvent(user, { summary, description, startTime
         start: { dateTime: eventStart.toISOString(), timeZone: 'Asia/Kolkata' },
         end: { dateTime: eventEnd.toISOString(), timeZone: 'Asia/Kolkata' },
         recurrence: [recurrenceRule],
-      },
+      }
     });
 
-    if (!response?.data?.id) {
-      console.error('❌ No event ID returned from Google Calendar API response:', response.data);
-      throw new Error('Failed to create calendar event');
-    }
+    if (!res.data?.id) throw new Error('Failed to create calendar event');
 
-    console.log(`✅ Event created with ID: ${response.data.id}`);
+    console.log(`Created Google Calendar event with ID: ${res.data.id}`);
 
-    // Return event ID so caller can save to DB
-    return response.data.id;
-
+    return res.data.id;
   } catch (error) {
-    console.error('🔥 createGoogleCalendarEvent error:', error);
-    throw error; // rethrow so calling function can handle
+    console.error('Error in createGoogleCalendarEvent:', error);
+    throw error;
   }
 }
+
 
 
 async function deleteGoogleCalendarEvent(user, eventId) {
@@ -188,15 +159,23 @@ async function deleteGoogleCalendarEvent(user, eventId) {
     expiry_date: user.googleToken.expiry_date,
   });
 
-  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+  try {
+    await oauth2Client.getAccessToken(); // refresh if needed
 
-  await calendar.events.delete({
-    calendarId: 'primary',
-    eventId,
-  });
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    await calendar.events.delete({
+      calendarId: 'primary',
+      eventId,
+    });
 
-  console.log(`Deleted Google Calendar event: ${eventId}`);
+    console.log(`Deleted Google Calendar event: ${eventId}`);
+  } catch (error) {
+    console.error('Error deleting Google Calendar event:', error);
+    throw error;
+  }
 }
+
+
 async function updateGoogleEvent(user, eventId, {
   summary,
   description,

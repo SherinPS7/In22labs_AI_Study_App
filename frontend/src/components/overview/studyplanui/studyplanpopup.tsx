@@ -64,6 +64,7 @@ const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedCourses, setSelectedCourses] = useState<Course[]>([]);
    const [loading, setLoading] = React.useState<boolean>(false);
+   const [isLoadingExistingPlan, setIsLoadingExistingPlan] = useState(false);
  const [studyPlanData, setStudyPlanData] = useState<StudyPlanData>({
   plan_name: '',
   start_date: '',
@@ -125,6 +126,7 @@ const handleSave = async () => {
       result = await createStudyPlan(payload);
     }
 
+
     console.log('API Response:', result);
 
     if (result?.googleAuthUrl) {
@@ -144,28 +146,83 @@ const handleSave = async () => {
     setLoading(false);
   }
 };
+useEffect(() => {
+  if (isOpen && editingPlan) {
+    console.log('Opening edit for plan:', editingPlan.id);
+    loadExistingPlanData();
+  } else if (isOpen && !editingPlan) {
+    console.log('Creating new plan');
+    resetForm();
+  }
+}, [isOpen, editingPlan]);
 
 
+const loadExistingPlanData = async () => {
+  if (!editingPlan) return;
+  setIsLoadingExistingPlan(true);
+  try {
+    const response = await fetch(`http://localhost:3000/api/studyplan/${editingPlan.id}`);
+    if (!response.ok) throw new Error('Failed to fetch plan details');
+    const planDetails = await response.json();
+console.log('Loaded plan details:', planDetails);
+
+    setStudyPlanData({
+      plan_name: editingPlan.plan_name,
+      start_date: editingPlan.start_date,
+      end_date: editingPlan.end_date,
+      start_time: planDetails.start_time || '17:00',  // <-- new field included here
+      course_ids: planDetails.course_ids || [],
+      course_settings: planDetails.course_settings || {},
+      sync_with_notion: planDetails.sync_with_notion || false,
+      sync_with_google: planDetails.sync_with_google || false,
+    });
+    console.log('Loaded plan details:', planDetails);
 
 
+    if (planDetails.course_ids?.length > 0) {
+      await loadSelectedCourses(planDetails.course_ids);
+    }
+  } catch (error) {
+    
+    setError('Failed to load existing plan data');
+  } finally {
+    setIsLoadingExistingPlan(false);
+  }
+};
+const loadSelectedCourses = async (courseIds: number[]) => {
+  try {
+    const res = await fetch(`http://localhost:3000/api/studyplan/courses-by-ids`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ courseIds }),
+    });
+    if (!res.ok) throw new Error('Failed to fetch course details');
+    const courses = await res.json();
+    setSelectedCourses(courses);
+  } catch {
+    setError('Failed to load course details');
+  }
+};
 
-  const resetForm = () => {
+
+const resetForm = () => {
   setCurrentStep(1);
   setSelectedCourses([]);
-setStudyPlanData({
-  plan_name: '',
-  start_date: '',
-  end_date: '',
-  start_time: '17:00', // reset or empty string
-  course_ids: [],
-  course_settings: {},
-  sync_with_notion: false,
-  sync_with_google: false,
-});
-
+  setStudyPlanData({
+    plan_name: '',
+    start_date: '',
+    end_date: '',
+    start_time: '17:00',
+    course_ids: [],
+    course_settings: {},
+    // sync_notion: false,
+    // sync_google: false,
+  });
   setError('');
   setLoading(false);
-};
+  setIsLoadingExistingPlan(false);
+}
+
 
 
   const renderStep = () => {

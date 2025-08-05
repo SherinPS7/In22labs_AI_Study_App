@@ -51,4 +51,6 @@ router.patch("/:userId/sync/notion", userProfileController.updateSyncWithNotion)
 router.get('/:userId/accomplishments', userProfileController.getUserAccomplishments);
 
 router.post('/:planId/save',userProfileController.saveStudyPlanWithCourses);
+
+router.get('/:userId/is-following', userProfileController.isFollowing);
 module.exports = router;

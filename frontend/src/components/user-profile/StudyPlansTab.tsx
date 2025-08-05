@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Edit, Share2, Save } from "lucide-react";
+import { Calendar, Edit, Share2, Save, ThumbsUp } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import axios from "axios";
@@ -12,37 +12,30 @@ interface StudyPlan {
   end_date: string;
   study_time: number;
   weekdays: string[];
-  // Add course_settings to interface if possible:
+  save_count?: number;
   course_settings?: Record<
     string,
     {
       daily_hours: number;
-      start_time: string; // HH:mm
+      start_time: string;
       study_days: string[];
       notes?: string;
     }
   >;
 }
-
 interface Props {
   studyPlans: StudyPlan[];
   isOwnProfile: boolean;
   userName: string;
 }
-
-// Helper: add hours to a "HH:mm" string and return "HH:mm"
-function addHours(time: string, hours: number): string {
+function addHours(time: string): string {
   if (!time) return "-";
   const [h, m] = time.split(":").map(Number);
   const date = new Date(0, 0, 0, h, m || 0);
-  date.setMinutes(date.getMinutes() + Math.round(hours * 60));
-  const hh = date.getHours().toString().padStart(2, "0");
-  const mm = date.getMinutes().toString().padStart(2, "0");
-  return `${hh}:${mm}`;
+  return date.toTimeString().substring(0, 5);
 }
-
 export default function StudyPlansTab({ studyPlans, isOwnProfile, userName }: Props) {
-  const getPlanStatus = (startDate: string, endDate: string) => {
+  const getStatus = (startDate: string, endDate: string) => {
     const now = new Date();
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -50,31 +43,29 @@ export default function StudyPlansTab({ studyPlans, isOwnProfile, userName }: Pr
     if (now >= start && now <= end) return "active";
     return "completed";
   };
-
   const formatDate = (dateStr: string) => format(new Date(dateStr), "MMM dd, yyyy");
-
   const handleShareClick = (planId: number) => {
     const shareUrl = `${window.location.origin}/studyplan/${planId}`;
     navigator.clipboard.writeText(shareUrl);
     toast.success("Study plan link copied to clipboard!");
   };
-
-const handleSaveClick = async (planId: number) => {
-  try {
-    await axios.post(
-      `http://localhost:3000/api/profile/${planId}/save`, 
-      {},
-      { withCredentials: true }
-    );
-    toast.success("Study plan saved! You can now customize it.");
-    // Optionally redirect to new plan page or refresh the list
-  } catch (error) {
-    toast.error("Failed to save study plan.");
-  }
-};
-
-
-
+  const handleSaveClick = async (planId: number) => {
+    try {
+      const response = await axios.post(
+        `http://localhost:3000/api/profile/${planId}/save`,
+        {},
+        { withCredentials: true }
+      );
+      if (response.data.alreadySaved) {
+        toast.success("You have already saved this study plan.");
+      } else {
+        toast.success("Study plan saved! You can now customize it.");
+      }
+    } catch (error) {
+      toast.error("Failed to save the study plan.");
+      console.error("Error saving plan:", error);
+    }
+  };
   return (
     <Card className="mt-4">
       <CardHeader>
@@ -83,7 +74,7 @@ const handleSaveClick = async (planId: number) => {
         </CardTitle>
         {isOwnProfile && (
           <CardDescription className="text-muted-foreground">
-            Manage and track your study progress
+            Manage and track your progress
           </CardDescription>
         )}
       </CardHeader>
@@ -94,15 +85,14 @@ const handleSaveClick = async (planId: number) => {
             <p>No study plans found</p>
             {isOwnProfile && (
               <Button className="mt-4" variant="outline">
-                Create Your First Study Plan
+                Create Your First
               </Button>
             )}
           </div>
         ) : (
           <div className="space-y-4">
             {studyPlans.map((plan) => {
-              const status = getPlanStatus(plan.start_date, plan.end_date);
-
+              const status = getStatus(plan.start_date, plan.end_date);
               return (
                 <div
                   key={plan.id}
@@ -118,39 +108,44 @@ const handleSaveClick = async (planId: number) => {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-lg font-semibold text-foreground">{plan.plan_name}</h3>
-                    <div className="flex gap-2 items-center" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex gap-4 items-center" onClick={(e) => e.stopPropagation()}>
                       {isOwnProfile && (
                         <button
                           onClick={() => console.log("Edit", plan.id)}
-                          className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                          className="p-1 rounded"
                           aria-label="Edit plan"
                           title="Edit plan"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-4 h-4 stroke-white" />
                         </button>
                       )}
                       <button
                         onClick={() => handleShareClick(plan.id)}
-                        className="p-1 text-gray-600 hover:bg-gray-200 rounded flex items-center"
-                        aria-label="Share plan"
-                        title="Copy share link"
+                        className="p-1 rounded flex items-center"
+                        aria-label="Share"
+                        title="Share plan"
                       >
-                        <Share2 className="w-4 h-4" />
+                        <Share2 className="w-4 h-4 stroke-white" />
                       </button>
                       {!isOwnProfile && (
                         <Button
                           size="sm"
                           onClick={() => handleSaveClick(plan.id)}
-                          className="ml-2 flex items-center gap-1"
+                          className="flex items-center"
                           aria-label="Save plan"
-                          title="Save study plan"
+                          title="Save plan"
                         >
-                          <Save className="w-4 h-4" />
+                          <Save className="w-4 h-4 stroke-white" />
                         </Button>
                       )}
+
+                      {/* Thumbs up icon with save count (separate, consistent style) */}
+                      <div className="flex flex-col items-center ml-2 select-none">
+                        <ThumbsUp className="w-4 h-4 stroke-white" />
+                        <span className="text-xs text-white mt-0.5">{plan.save_count ?? 0}</span>
+                      </div>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm text-muted-foreground">
                     <div>
                       <p>
@@ -180,33 +175,6 @@ const handleSaveClick = async (planId: number) => {
                       </p>
                     </div>
                   </div>
-
-                  {/* {plan.course_settings && Object.keys(plan.course_settings).length > 0 && (
-                    <div className="mt-4 bg-black-50 rounded border p-3 text-sm text-muted-foreground">
-                      <strong className="text-blue-700 text-xs tracking-wide">Study Sessions:</strong>
-                      <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto">
-                        {Object.entries(plan.course_settings).map(([courseId, settings]) => {
-                          const endTime = addHours(settings.start_time, settings.daily_hours);
-                          return (
-                            <li key={courseId} className="flex flex-col md:flex-row md:items-center md:gap-3">
-                              {/* You can replace 'Course {courseId}' with course name if you have lookup */}
-                              {/* <span className="font-medium text-gray-900">Course {courseId}:</span>
-                              <span className="ml-1">
-                                <span className="text-gray-700">Start </span>
-                                <span className="font-semibold">{settings.start_time}</span>
-                                <span className="mx-1">→</span>
-                                <span className="text-gray-700">End </span>
-                                <span className="font-semibold">{endTime}</span>
-                                <span className="ml-2 text-gray-500">
-                                  ({settings.daily_hours}h on {settings.study_days?.join(", ")})
-                                </span>
-                              </span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-            //         </div> */}
-            {/* //  )}  */}
                 </div>
               );
             })}

@@ -17,6 +17,7 @@ exports.googleCallback = async (req, res) => {
 
   let returnUrl = 'http://localhost:5173/';
   let userId, planData;
+
   if (state) {
     try {
       const parsedState = JSON.parse(state);
@@ -46,7 +47,11 @@ exports.googleCallback = async (req, res) => {
     // Fetch user with tokens (to use Google Calendar API)
     const userWithTokens = await User.findByPk(userId, { include: ['googleToken'] });
 
-    // Create study plan in DB using planData
+    // Validate start_time fallback
+    const validatedStartTime = planData.start_time && /^\d{2}:\d{2}$/.test(planData.start_time) ?
+      planData.start_time : "09:00";
+
+    // Create study plan in DB using planData (including start_time)
     const studyPlan = await StudyPlan.create({
       user_id: userId,
       plan_name: planData.plan_name,
@@ -57,9 +62,10 @@ exports.googleCallback = async (req, res) => {
       course_ids: planData.course_ids || [],
       course_settings: planData.course_settings || {},
       course_count: planData.course_ids ? planData.course_ids.length : 0,
+      start_time: validatedStartTime,
     });
 
-    // Prepare Google Calendar event details (like in your controller)
+    // Prepare Google Calendar event details
     const mapDay = {
       Sunday: "SU",
       Monday: "MO",
@@ -72,7 +78,7 @@ exports.googleCallback = async (req, res) => {
     const eventDays = (planData.weekdays || []).map(d => mapDay[d] || d.toUpperCase().slice(0, 2));
 
     const firstCourseId = Object.keys(planData.course_settings)[0];
-    const start_time_str = planData.course_settings[firstCourseId]?.start_time || "09:00";
+    const start_time_str = validatedStartTime;
     const duration_minutes = planData.study_time;
     const startDateStr = new Date().toISOString().split("T")[0];
     const startDateTime = new Date(`${startDateStr}T${start_time_str}:00+05:30`);
@@ -99,12 +105,14 @@ exports.googleCallback = async (req, res) => {
     studyPlan.google_event_id = googleEventId;
     await studyPlan.save();
 
+    // Redirect back to return URL
     return res.redirect(returnUrl);
   } catch (err) {
     console.error('Google OAuth callback error:', err);
     return res.status(500).send('OAuth error: ' + err.message);
   }
 };
+
 
 
 // exports.createEvent = async (req, res) => {

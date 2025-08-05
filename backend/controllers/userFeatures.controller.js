@@ -10,7 +10,7 @@ const saveFeatures = async (req, res) => {
       console.log("Error: Invalid or empty feature list");
       return res.status(400).json({ error: "Invalid or empty feature list" });
     }
-const userId = `1`;
+const userId = req.session.userId; // Assuming user ID is stored in session
 
     console.log("Session user ID:", userId);
 

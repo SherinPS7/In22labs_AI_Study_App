@@ -37,12 +37,13 @@ type SessionResponse = {
 };
 
 const Overview = () => {
-  const [user, setUser] = useState<User | null>(null);
+ const [user, setUser] = useState<User | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [showText, setShowText] = useState(false);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);
-  const navigate = useNavigate();
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [selectedProgress, setSelectedProgress] = useState<any>(null);  const navigate = useNavigate();
 
   // Fetch session
   useEffect(() => {
@@ -105,6 +106,11 @@ const Overview = () => {
     handleClosePopup();
   };
 
+  const handleShowProgress = (progressData) => {
+  setSelectedProgress(progressData);
+  setShowProgressModal(true);
+};
+
   // Render fallback during session load
   if (sessionLoading) return <div className="p-4 text-center">Loading session...</div>;
   if (!user) return <div className="p-4 text-center text-red-500">Please log in to view this page</div>;
@@ -127,13 +133,20 @@ const Overview = () => {
   <div className="flex flex-col gap-3 md:flex-row md:items-center w-full md:w-auto">
     <SearchBar />
 
-    <button
-      onClick={handlePlusClick}
-      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-full shadow hover:shadow-md transition-transform hover:scale-105 w-full md:w-auto justify-center"
-    >
-      <Plus className="h-5 w-5" />
-      <span className="whitespace-nowrap">Generate New Course</span>
-    </button>
+<button
+  onClick={handlePlusClick}
+  className="flex items-center justify-center p-3 bg-gradient-to-br from-green-400 to-green-600 text-white rounded-full shadow-lg hover:scale-110 transition-transform"
+  aria-label="Add a Course"
+>
+  <Plus className="h-6 w-6" />
+</button>
+
+
+
+
+
+
+
   </div>
 </main>
 

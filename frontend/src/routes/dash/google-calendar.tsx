@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import {
   format,
   startOfMonth,
@@ -19,9 +20,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 const views = ["month", "day"] as const;
 type View = (typeof views)[number];
+
+type UserType = { id: number; name?: string; /* other user fields */ };
 
 type StudyPlan = {
   id: number;
@@ -31,25 +35,25 @@ type StudyPlan = {
   studyTime: string;
   startDate: string;
   endDate: string;
-  start_time: string; // Optional start time for the plan
+  start_time: string;
 };
 
-
 const weekdayMap: { [key: string]: number } = {
-  Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6,
 };
 
 const getRandomColor = () => {
   const colors = [
-    "bg-purple-600",
-    "bg-green-600",
-    "bg-yellow-500",
-    "bg-pink-600",
-    "bg-blue-500",
+    "bg-green-800",
+    "bg-teal-900",
+    "bg-blue-900",
+    "bg-pink-900",
+    "bg-purple-900",
+    "bg-yellow-900",
+    "bg-orange-900",
   ];
   return colors[Math.floor(Math.random() * colors.length)];
 };
-
 
 export default function CalendarView() {
   const [view, setView] = useState<View>("month");
@@ -57,44 +61,30 @@ export default function CalendarView() {
   const [open, setOpen] = useState(false);
   const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
   const [activePlans, setActivePlans] = useState<StudyPlan[]>([]);
-  const timelineRef = useRef<HTMLDivElement>(null);
+  const [user, setUser] = useState<UserType | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const navigate = useNavigate();
 
   const start = startOfWeek(startOfMonth(selectedDate), { weekStartsOn: 0 });
   const end = endOfWeek(endOfMonth(selectedDate), { weekStartsOn: 0 });
   const days = eachDayOfInterval({ start, end });
 
-const handleDayClick = (date: Date) => {
-  const weekday = date.getDay();
-  console.log("Day clicked:", date, "→ Weekday index:", weekday);
-
-  const matchingPlans = studyPlans.filter(plan => {
-    const planStart = new Date(plan.startDate);
-    const planEnd = new Date(plan.endDate);
-    const weekdayIncludes = plan.weekdays.includes(weekday);
-    const dateInRange = date >= planStart && date <= planEnd;
-
-    console.log(`Checking plan "${plan.name}" for the day:`, {
-      weekdayIncludes,
-      dateInRange,
-      planStart: planStart.toISOString(),
-      planEnd: planEnd.toISOString(),
-      date: date.toISOString()
+  const handleDayClick = (date: Date) => {
+    const weekday = date.getDay();
+    const matchingPlans = studyPlans.filter(plan => {
+      const planStart = new Date(plan.startDate);
+      const planEnd = new Date(plan.endDate);
+      const weekdayIncludes = plan.weekdays.includes(weekday);
+      const dateInRange = date >= planStart && date <= planEnd;
+      return weekdayIncludes && dateInRange;
     });
-
-    return weekdayIncludes && dateInRange;
-  });
-
-  console.log("Matching plans for the day:", matchingPlans);
-  setActivePlans(matchingPlans);
-  setSelectedDate(date);
-  setOpen(true);
-};
-
-
+    setActivePlans(matchingPlans);
+    setSelectedDate(date);
+    setOpen(true);
+  };
 
   const handleMonthClick = (monthIndex: number) => {
     const newDate = setMonth(new Date(selectedDate), monthIndex);
-    console.log("Month clicked:", monthIndex, "→ Date set to:", newDate);
     setView("day");
     setSelectedDate(newDate);
   };
@@ -102,94 +92,97 @@ const handleDayClick = (date: Date) => {
   const prevMonth = () => setSelectedDate(subMonths(selectedDate, 1));
   const nextMonth = () => setSelectedDate(addMonths(selectedDate, 1));
 
-const transformPlans = (apiData: any[]): StudyPlan[] => {
-  return apiData.map(plan => {
-    const weekdayArray = Array.isArray(plan.weekdays)
-      ? plan.weekdays.map((day: string) => {
-          const cleaned = day.trim().charAt(0).toUpperCase() + day.trim().slice(1).toLowerCase();
-          const wdNum = weekdayMap[cleaned];
-          console.log(`Mapping weekday "${day}" to number:`, wdNum);
-          return wdNum;
-        })
-      : [];
-
-    console.log(`Transforming plan: ${plan.plan_name}`, {
-      weekdays: weekdayArray,
-      start_time: plan.start_time,
+  const transformPlans = (apiData: any[]): StudyPlan[] => {
+    return apiData.map(plan => {
+      const weekdayArray = Array.isArray(plan.weekdays)
+        ? plan.weekdays.map((day: string) => {
+            const trimmedDay = day.trim();
+            const wdNum = weekdayMap[trimmedDay];
+            if (wdNum === undefined) {
+              console.warn(`Unrecognized weekday "${trimmedDay}" in plan`, plan);
+              return -1;
+            }
+            return wdNum;
+          }).filter((wd: number) => wd >= 0)
+        : [];
+      return {
+        id: plan.id,
+        name: plan.plan_name,
+        color: getRandomColor(),
+        weekdays: weekdayArray,
+        studyTime: plan.start_time || "00:00",
+        startDate: plan.start_date,
+        endDate: plan.end_date,
+        start_time: plan.start_time || "00:00",
+      };
     });
+  };
 
-    return {
-      id: plan.id,
-      name: plan.plan_name,
-      color: getRandomColor(),
-      weekdays: weekdayArray,
-      studyTime: plan.start_time || (plan.study_time ? plan.study_time.slice(0, 5) : "00:00"),
-      startDate: plan.start_date,
-      endDate: plan.end_date,
-      start_time: plan.start_time || "00:00",
-    };
-  });
-};
-
-
-
-
-
-useEffect(() => {
-  const fetchPlans = async () => {
+ useEffect(() => {
+  const fetchSession = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/studyplan/study-plans?userId=1",  
-        {
-          method: "GET",
-          credentials: "include"
-        },
-      );
-      console.log("API Response status:", res.status);
+      const res = await axios.get('http://localhost:3000/api/session/check-session', {
+        withCredentials: true,
+      });
+      if (res.data.loggedIn) {
+        setUser(res.data.user);
+      }
+    } catch (err) {
+      console.error('Failed to fetch session:', err);
+    } finally {
+      setSessionLoading(false);
+    }
+  };
+  fetchSession();
+}, []);
+
+  // Fetch study plans when user is set (session loaded)
+  useEffect(() => {
+  const fetchPlans = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`http://localhost:3000/api/studyplan/study-plans?userId=${user.userId}`, {
+        method: "GET",
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Failed to fetch plans");
       const data = await res.json();
-      console.log("Raw API data:", data);
-
       const transformed = transformPlans(data.studyPlans || []);
-      console.log("Transformed study plans:", transformed);
-
       setStudyPlans(transformed);
     } catch (err) {
       console.error("Error fetching study plans:", err);
     }
   };
   fetchPlans();
-}, []);
+}, [user]);
+  const monthNames = Array.from({ length: 12 }, (_, i) => format(new Date(2023, i, 1), "MMM"));
 
-
- useEffect(() => {
-  if (open && activePlans.length > 0 && timelineRef.current) {
-    const times = activePlans.map(plan => {
-      const [hourStr, minStr] = plan.start_time ? plan.start_time.split(":") : ["0","0"];
-      const hour = parseInt(hourStr);
-      const min = parseInt(minStr);
-      console.log(`Plan: ${plan.name} start time split as ${hour}:${min}`);
-      return hour + min / 60;
-    });
-
-    const earliestTime = Math.min(...times);
-    console.log("Earliest plan start time (decimal):", earliestTime);
-
-    const hourHeight = 50;
-    timelineRef.current.scrollTop = earliestTime * hourHeight;
+  if (sessionLoading) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-[#101010] text-[#a7f3d0]">
+        Loading...
+      </div>
+    );
   }
-}, [open, activePlans]);
-
-  const monthNames = Array.from({ length: 12 }, (_, i) =>
-    format(new Date(2023, i, 1), "MMM")
-  );
 
   return (
-    <div className="w-full h-screen p-4 text-white overflow-hidden flex flex-col">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Study Planner</h1>
-        <div className="flex gap-2">
-          {views.map(v => (
-            <Button key={v} variant={view === v ? "default" : "outline"} onClick={() => setView(v)}>
+    <div className="relative w-full h-screen p-6 bg-[#101010] text-[#a7f3d0] flex flex-col overflow-hidden">
+      {/* Optional glow div (commented) */}
+      {/* <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-[#065f46] rounded-full opacity-20 blur-3xl pointer-events-none" /> */}
+      <div className="relative z-10 flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-extrabold text-[#a7f3d0] drop-shadow-lg">Study Planner</h1>
+        <div className="flex gap-3">
+          {views.map((v) => (
+            <Button
+              key={v}
+              variant={view === v ? "default" : "outline"}
+              className={cn(
+                view === v
+                  ? "bg-[#065f46] text-white border-[#064e3b]"
+                  : "text-[#a7f3d0] border-[#0d8050] hover:bg-[#064e3b]"
+              )}
+              onClick={() => setView(v)}
+            >
               {v.charAt(0).toUpperCase() + v.slice(1)}
             </Button>
           ))}
@@ -197,16 +190,16 @@ useEffect(() => {
       </div>
 
       {view === "month" ? (
-        <div className="mx-auto mt-8 w-[75vw] h-[75vh] grid grid-cols-3 grid-rows-4 border border-white rounded-md overflow-hidden">
+        <div className="relative z-10 mx-auto mt-6 w-[75vw] h-[75vh] grid grid-cols-3 grid-rows-4 border-4 border-[#064e3b] rounded-lg bg-[#065f46] shadow-xl overflow-hidden">
           {monthNames.map((monthName, i) => (
             <div
               key={monthName}
               className={cn(
-                "flex items-center justify-center text-2xl font-semibold cursor-pointer select-none",
-                "border border-white",
+                "flex items-center justify-center text-2xl font-semibold cursor-pointer select-none transition-colors duration-200",
+                "border border-[#064e3b]",
                 i === selectedDate.getMonth()
-                  ? "bg-purple-600 text-white"
-                  : "bg-transparent text-white hover:bg-purple-700"
+                  ? "bg-[#0d8050] text-[#a7f3d0]"
+                  : "bg-transparent text-[#a7f3d0] hover:bg-[#064e3b]"
               )}
               onClick={() => handleMonthClick(i)}
             >
@@ -216,45 +209,54 @@ useEffect(() => {
         </div>
       ) : (
         <>
-          <div className="flex justify-between mb-2">
-            <Button variant="ghost" onClick={prevMonth}>← Prev</Button>
-            <span className="font-semibold">{format(selectedDate, "MMMM yyyy")}</span>
-            <Button variant="ghost" onClick={nextMonth}>Next →</Button>
+          <div className="relative z-10 flex justify-between mb-4">
+            <Button variant="ghost" className="text-[#a7f3d0]" onClick={prevMonth}>
+              ← Prev
+            </Button>
+            <span className="font-semibold text-[#a7f3d0]">{format(selectedDate, "MMMM yyyy")}</span>
+            <Button variant="ghost" className="text-[#a7f3d0]" onClick={nextMonth}>
+              Next →
+            </Button>
           </div>
 
-          <div className="grid grid-cols-7 border border-gray-700 h-[calc(100vh-250px)] overflow-auto">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
-              <div key={day} className="text-center font-semibold border border-gray-700 bg-gray-900 py-2">{day}</div>
+          <div className="relative z-10 grid grid-cols-7 border-4 border-[#064e3b] bg-[#101010] rounded h-[calc(100vh-250px)] overflow-auto shadow-inner">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+              <div
+                key={day}
+                className="text-center font-semibold border border-[#064e3b] bg-[#065f46] text-[#a7f3d0] py-2 select-none"
+              >
+                {day}
+              </div>
             ))}
-            {days.map(day => {
+            {days.map((day) => {
               const inMonth = isSameMonth(day, selectedDate);
-const dayPlans = studyPlans.filter(plan => {
-  const weekdayMatch = plan.weekdays.includes(day.getDay());
+              const dayPlans = studyPlans.filter((plan) => {
+                const weekdayMatch = plan.weekdays.includes(day.getDay());
+                const current = day.getTime();
+                const start = new Date(plan.startDate).getTime();
+                const end = new Date(plan.endDate).getTime();
+                return weekdayMatch && current >= start && current <= end;
+              });
 
-  // Convert strings to Date objects for comparison
-  const current = day.getTime();
-  const start = new Date(plan.startDate).getTime();
-  const end = new Date(plan.endDate).getTime();
-
-  const withinRange = current >= start && current <= end;
-
-  return weekdayMatch && withinRange;
-});
               return (
                 <div
                   key={day.toString()}
                   className={cn(
-                    "border border-gray-800 p-1 cursor-pointer hover:bg-gray-800 text-sm",
-                    !inMonth && "bg-gray-900 opacity-50"
+                    "border border-[#064e3b] p-1 cursor-pointer transition-colors duration-150",
+                    inMonth ? "bg-[#101010] hover:bg-[#064e3b]" : "bg-[#065f46] opacity-60"
                   )}
                   onClick={() => handleDayClick(day)}
                 >
-                  <div className="font-semibold">{format(day, "d")}</div>
+                  <div className="font-semibold text-[#a7f3d0]">{format(day, "d")}</div>
                   <div className="flex flex-col gap-1 mt-1">
                     {dayPlans.map(plan => (
                       <div
                         key={plan.id}
-                        className={cn("text-xs px-1 py-0.5 rounded text-white", plan.color, "opacity-90")}
+                        className={cn(
+                          "text-xs px-1 py-0.5 rounded text-white font-medium shadow",
+                          plan.color,
+                          "opacity-90"
+                        )}
                       >
                         {plan.name}
                       </div>
@@ -272,71 +274,27 @@ const dayPlans = studyPlans.filter(plan => {
           <DialogHeader>
             <DialogTitle>Plans for {format(selectedDate, "PPP")}</DialogTitle>
           </DialogHeader>
-          {activePlans.length > 0 ? (() => {
-            console.log("Active plans to show in dialog:", activePlans);
-            const times = activePlans.map(plan => {
-              const [hourStr, minStr] = plan.studyTime.split(":");
-              return { hour: parseInt(hourStr), min: parseInt(minStr), plan };
-            });
-
-            let minHour = Math.max(0, Math.min(...times.map(t => t.hour)) - 6);
-            let maxHour = Math.min(23, Math.max(...times.map(t => t.hour)) + 6);
-            const hourHeight = 50;
-
-            const timelineHours = [];
-            for (let h = minHour; h <= maxHour; h++) {
-              timelineHours.push(h);
-            }
-
-            const formatHourLabel = (hour: number) => format(new Date(0, 0, 0, hour), "h a");
-
-           return (
-  <div
-    ref={timelineRef}
-    className="relative ml-4 pl-6 border-l-2 border-purple-600 overflow-y-auto"
-    style={{ height: "400px" }}
-  >
-    {/* Hour markers */}
-    {timelineHours.map(hour => (
-      <div
-        key={hour}
-        className="relative flex items-center"
-        style={{ height: `${hourHeight}px` }}
-      >
-        <div className="absolute left-0 top-1/2 w-full border-t border-dashed border-gray-600 -z-10" />
-        <div className="w-14 text-right text-xs text-gray-400 select-none">
-          {formatHourLabel(hour)}
-        </div>
-      </div>
-    ))}
-
-    {/* Study plan events */}
-    {times.map(({ hour, min, plan }) => {
-      const posY = ((hour + min / 60) - minHour) * hourHeight;
-      const timeLabel = format(new Date(0, 0, 0, hour, min), "h:mm a");
-
-      return (
-        <div
-          key={plan.id}
-          className="absolute left-16 flex items-center"
-          style={{
-            top: `${posY}px`,
-            transform: "translateY(-50%)", // centers dot on dashed line
-          }}
-        >
-          <div className={`h-4 w-4 rounded-full border-2 border-white ${plan.color} mr-2`} />
-          <div className="bg-gray-800 px-2 py-1 rounded-md shadow text-white max-w-xs">
-            <div className="font-semibold text-sm">{plan.name}</div>
-            <div className="text-xs text-gray-400">{timeLabel}</div>
-          </div>
-        </div>
-      );
-    })}
-  </div>
-);
-
-          })() : (
-            <div className="text-gray-400">No study plans for this day.</div>
+          {activePlans.length > 0 ? (
+            <div className="space-y-2">
+              {activePlans.map(plan => (
+                <div
+                  key={plan.id}
+                  onClick={() => {
+                    setOpen(false);
+                    navigate(`/studyplan/${plan.id}`);
+                  }}
+                  className={cn(
+                    "text-white px-3 py-1 rounded cursor-pointer shadow font-semibold hover:bg-[#0d8050]",
+                    plan.color
+                  )}
+                  title={`Go to study plan: ${plan.name}`}
+                >
+                  {plan.name}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-[#a7f3d0] text-center py-4">No study plans for this day.</div>
           )}
         </DialogContent>
       </Dialog>

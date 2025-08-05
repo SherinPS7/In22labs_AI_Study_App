@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTrigger,
@@ -75,7 +75,7 @@ const togglePublicProfile = async (val: boolean) => {
     }
   };
   // Update public view mode locally (no backend call here by default)
-  const toggleViewAsPublic = (val: boolean) => setViewAsPublic(val);
+  // const toggleViewAsPublic = (val: boolean) => setViewAsPublic(val);
 
   // Update sync with Google
   const toggleSyncGoogle = async (val: boolean) => {
@@ -126,35 +126,40 @@ const togglePublicProfile = async (val: boolean) => {
           <div className="py-6 text-center text-muted-foreground">Loading...</div>
         ) : (
           <div className="grid gap-4 py-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="public-profile">Public Profile</Label>
-              <Switch
-                id="public-profile"
-                checked={isPublic}
-                onCheckedChange={togglePublicProfile}
-              />
-            </div>
+  <div className="flex items-center justify-between">
+    <Label htmlFor="public-profile" className="min-w-[120px]">Public Profile</Label>
+    <Switch
+      id="public-profile"
+      checked={isPublic}
+      onCheckedChange={togglePublicProfile}
+    />
+  </div>
 
-            <div className="flex items-center gap-4">
-              <Label htmlFor="public-view-mode">Public View Mode</Label>
-              <Switch id="public-view-mode" checked={viewAsPublic} onCheckedChange={toggleViewAsPublic} />
-            </div>
+  {/* <div className="flex items-center justify-between">
+    <Label htmlFor="public-view-mode" className="min-w-[120px]">Public View Mode</Label>
+    <Switch
+      id="public-view-mode"
+      checked={viewAsPublic}
+      onCheckedChange={toggleViewAsPublic}
+    />
+  </div> */}
 
-            <div className="flex items-center gap-4">
-              <Label htmlFor="sync-google">Sync Google</Label>
-              <Switch id="sync-google" checked={syncWithGoogle} onCheckedChange={toggleSyncGoogle} />
-            </div>
+  <div className="flex items-center justify-between">
+    <Label htmlFor="sync-google" className="min-w-[120px]">Sync Google</Label>
+    <Switch id="sync-google" checked={syncWithGoogle} onCheckedChange={toggleSyncGoogle} />
+  </div>
 
-            <div className="flex items-center gap-4">
-              <Label htmlFor="sync-notion">Sync Notion</Label>
-              <Switch id="sync-notion" checked={syncWithNotion} onCheckedChange={toggleSyncNotion} />
-            </div>
+  <div className="flex items-center justify-between">
+    <Label htmlFor="sync-notion" className="min-w-[120px]">Sync Notion</Label>
+    <Switch id="sync-notion" checked={syncWithNotion} onCheckedChange={toggleSyncNotion} />
+  </div>
 
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              <Pencil className="w-4 h-4 mr-2" />
-              Close
-            </Button>
-          </div>
+  <Button variant="outline" onClick={() => setOpen(false)} className="self-start">
+    <Pencil className="w-4 h-4 mr-2" />
+    Close
+  </Button>
+</div>
+
         )}
       </DialogContent>
     </Dialog>

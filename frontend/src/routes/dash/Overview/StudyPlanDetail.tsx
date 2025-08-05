@@ -1,24 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Play, ChevronDown, ChevronUp } from "lucide-react";
 import axios from "axios";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Play } from "lucide-react";
+import { Progress } from "@radix-ui/react-progress";
+import { toast } from "sonner";
 
-// Interfaces
+// Data interfaces
 interface Course {
   id: number;
   course_name: string;
-  user_id_foreign_key?: number;
-  ref_course_id?: number | null;
-  notion_template_db_id?: string | null;
+  user_id?: number;
 }
-
 interface StudyPlan {
   id: number;
   plan_name: string;
@@ -27,249 +19,371 @@ interface StudyPlan {
   end_date: string;
   weekdays: string[];
   study_time: number;
+  start_time: string;
   course_details?: Course[];
 }
 
-// Gradient colors to visually differentiate courses
-const gradients = [
-  "linear-gradient(135deg, #09af67, rgb(77, 96, 90))",
-  "linear-gradient(135deg, rgb(24, 173, 118), rgb(64, 91, 91))",
-  "linear-gradient(135deg, rgb(26, 90, 57), rgb(62, 70, 66))",
-  "linear-gradient(135deg, rgb(48, 99, 76), rgb(88, 104, 116))",
-  "linear-gradient(135deg, rgb(46, 98, 53), rgb(91, 180, 135))",
-  "linear-gradient(135deg, rgb(39, 91, 85), rgb(94, 190, 209))",
-  "linear-gradient(135deg, rgb(75, 128, 116), rgb(32, 55, 69))",
-];
+// Helper: Map weekday names to indexes
+const weekdayMap: Record<string, number> = {
+  Sunday: 0,
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+};
 
-const getGradientForCourse = (courseId: number) =>
-  gradients[courseId % gradients.length];
+// Generate all dates between two dates inclusive
+const getDatesInRange = (start: Date, end: Date): Date[] => {
+  const dates: Date[] = [];
+  const dt = new Date(start);
+  while (dt <= end) {
+    dates.push(new Date(dt));
+    dt.setDate(dt.getDate() + 1);
+  }
+  return dates;
+};
 
 const StudyPlanDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [plan, setPlan] = useState<StudyPlan | null>(null);
+  const [planName, setPlanName] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [progressMap, setProgressMap] = useState<Record<number, number>>({}); // courseId => progress %
+  const [progressMap, setProgressMap] = useState<Record<number, number>>({});
+  const [expandedCourses, setExpandedCourses] = useState<Set<number>>(new Set());
 
-  // Format date nicely, fallback to N/A
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return "N/A";
-    return new Date(dateStr).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+  // Hard-coded streak date strings for demo purposes
+  const streakDatesIso = [
+    "2025-07-25",
+    "2025-07-26",
+    "2025-07-27",
+    "2025-07-28",
+    "2025-07-29",
+    "2025-07-30",
+  ];
+  // Converts to Date objects
+  const streakDates = streakDatesIso.map((d) => new Date(d));
+
+  // Helper to check if a date is a streak day
+  const isStreakDate = (date: Date): boolean => {
+    return streakDates.some(
+      (d) =>
+        d.getFullYear() === date.getFullYear() &&
+        d.getMonth() === date.getMonth() &&
+        d.getDate() === date.getDate()
+    );
   };
 
-  // Get study plan status (Upcoming, Active, Completed)
-  const getPlanStatus = (startDateStr: string, endDateStr: string) => {
+  const formatDate = (dateStr: string) =>
+    dateStr
+      ? new Date(dateStr).toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : "N/A";
+
+  const getStatus = () => {
+    if (!plan) return "Unknown";
     const now = new Date();
-    const start = new Date(startDateStr);
-    const end = new Date(endDateStr);
+    const start = new Date(plan.start_date);
+    const end = new Date(plan.end_date);
     if (now < start) return "Upcoming";
     if (now > end) return "Completed";
     return "Active";
   };
+  const status = getStatus();
 
   useEffect(() => {
     if (!id) return;
-
-    const fetchPlan = async () => {
-      setLoading(true);
+    setLoading(true);
+    (async () => {
       try {
-        // Fetch study plan with course details
-        const res = await axios.get(
+        const { data } = await axios.get(
           `http://localhost:3000/api/studyplan/study-plans/${id}/with-courses`,
           { withCredentials: true }
         );
+        setPlan(data.studyPlan);
+        setPlanName(data.studyPlan.plan_name);
 
-        setPlan(res.data.studyPlan);
-
-        // If there are courses, fetch progress for each
-        if (res.data.studyPlan.course_details?.length) {
+        if (data.studyPlan?.course_details?.length) {
           const progressResults = await Promise.all(
-            res.data.studyPlan.course_details.map(async (course: Course) => {
+            data.studyPlan.course_details.map(async (course: Course) => {
               try {
-                const progressRes = await axios.get<{
-                  watchedVideos: number;
-                  totalVideos: number;
-                }>(`http://localhost:3000/api/videos/course/progress/${course.id}`, {
-                  withCredentials: true,
-                });
-
-                const { watchedVideos, totalVideos } = progressRes.data;
+                const resp = await axios.get(
+                  `http://localhost:3000/api/videos/course/progress/${course.id}`,
+                  { withCredentials: true }
+                );
+                const { watchedVideos, totalVideos } = resp.data;
                 return {
                   courseId: course.id,
-                  progress: totalVideos > 0 ? Math.round((watchedVideos / totalVideos) * 100) : 0,
+                  progress: totalVideos
+                    ? Math.round((watchedVideos / totalVideos) * 100)
+                    : 0,
                 };
               } catch {
                 return { courseId: course.id, progress: 0 };
               }
             })
           );
-
-          const progressMapData: Record<number, number> = {};
+          const map: Record<number, number> = {};
           progressResults.forEach(({ courseId, progress }) => {
-            progressMapData[courseId] = progress;
+            map[courseId] = progress;
           });
-
-          setProgressMap(progressMapData);
+          setProgressMap(map);
         }
+        setError(null);
       } catch {
-        setError("Failed to load study plan");
+        setError("Failed to load plan.");
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchPlan();
+    })();
   }, [id]);
+
+  const toggleExpand = (courseId: number) => {
+    setExpandedCourses((prev) => {
+      const next = new Set(prev);
+      next.has(courseId) ? next.delete(courseId) : next.add(courseId);
+      return next;
+    });
+  };
+
+  const overallProgress = useMemo(() => {
+    if (!plan?.course_details?.length) return 0;
+    const total = plan.course_details.reduce(
+      (sum, c) => sum + (progressMap[c.id] ?? 0),
+      0
+    );
+    return Math.round(total / plan.course_details.length);
+  }, [plan, progressMap]);
 
   if (loading)
     return (
-      <div className="p-6 text-center text-xl font-semibold text-gray-600">
-        Loading study plan...
+      <div className="p-10 text-center text-lg text-gray-500 dark:text-gray-400">
+        Loading...
       </div>
     );
   if (error)
     return (
-      <div className="p-6 text-center text-red-600 text-lg font-semibold">
-        {error}
+      <div className="p-10 text-center text-red-500 dark:text-red-400">{error}</div>
+    );
+  if (!plan)
+    return (
+      <div className="p-10 text-center text-gray-500 dark:text-gray-400">
+        No plan found.
       </div>
     );
-  if (!plan) return <div className="p-6 text-center">No plan found.</div>;
 
-  const status = getPlanStatus(plan.start_date, plan.end_date);
+  // Mini calendar calculations
+  const startDate = new Date(plan.start_date);
+  const endDate = new Date(plan.end_date);
+  const today = new Date();
+  const datesInRange = getDatesInRange(startDate, endDate);
+  const studyDayIndexes = plan.weekdays.map((d) => weekdayMap[d]);
+  const isToday = (date: Date) => date.toDateString() === today.toDateString();
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <Card className="mb-8 shadow-lg border border-gray-200 dark:border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white">
-            {plan.plan_name}
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700 dark:text-gray-300 mb-8">
-            <div className="space-y-2">
-              <p>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  Duration:
-                </span>{" "}
-                {formatDate(plan.start_date)} — {formatDate(plan.end_date)}
-              </p>
-              <p>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  Daily Study Time:
-                </span>{" "}
-                {plan.study_time} minutes
-              </p>
-              <p>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  Study Days:
-                </span>{" "}
-                {plan.weekdays.join(", ")}
-              </p>
+    <div className="max-w-5xl mx-auto py-10 px-4 lg:px-0 select-none">
+      {/* Plan Header */}
+      <div className="flex flex-col md:flex-row md:gap-10">
+        <div className="flex-1 mb-8 md:mb-0">
+          <input
+            value={planName}
+            onChange={(e) => setPlanName(e.target.value)}
+            disabled={true} // editable feature can be added later
+            className="text-3xl font-bold w-full border-transparent bg-transparent focus:border-green-500 transition p-1 mb-1 outline-none text-gray-900 dark:text-white"
+            aria-label="Plan name"
+          />
+          <div className="flex flex-wrap gap-6 text-gray-500 text-sm mt-3">
+            <span>
+              Status:{" "}
+              <span
+                className={`text-xs px-2 py-1 rounded ${
+                  status === "Active"
+                    ? "bg-green-100 text-green-700"
+                    : status === "Upcoming"
+                    ? "bg-green-50 text-green-600"
+                    : "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                }`}
+              >
+                {status}
+              </span>
+            </span>
+            <span>
+              Duration: {formatDate(plan.start_date)} - {formatDate(plan.end_date)}
+            </span>
+            <span>
+              Days left:{" "}
+              {status === "Completed"
+                ? 0
+                : Math.max(
+                    Math.ceil(
+                      (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+                    ) + 1,
+                    0
+                  )}
+            </span>
+          </div>
+          <div className="mt-6">
+            <div className="text-md text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-4">
+              <span>
+                Goal: <span className="font-semibold">{plan.study_time} min/day</span>
+              </span>
+              <span>|</span>
+              <span>
+                Time: <span className="font-semibold">{plan.start_time}</span>
+              </span>
             </div>
-            <div className="space-y-2">
-              <p>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  Status:
-                </span>{" "}
-                <span
-                  className={`inline-block ml-1 px-3 py-1 rounded-full text-xs font-semibold ${
-                    status === "Active"
-                      ? "bg-green-100 text-green-800"
-                      : status === "Upcoming"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-gray-200 text-gray-700"
-                  }`}
-                >
-                  {status}
-                </span>
-              </p>
+            <div className="w-full max-w-lg">
+              <Progress
+                value={overallProgress}
+                max={100}
+                className="h-5 rounded bg-green-50 dark:bg-green-900"
+                aria-label="Overall progress"
+              >
+                <div
+                  className="bg-green-500 h-5 transition-all"
+                  style={{ width: `${overallProgress}%` }}
+                />
+              </Progress>
+              <div className="mt-1 text-right text-xs text-green-800 dark:text-green-200">
+                {overallProgress}%
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Courses Section */}
-          <section>
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-              Courses
-            </h2>
+        {/* Mini Calendar */}
+        <div className="flex-1">
+          <section className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-green-100 dark:border-green-700">
+            <div className="mb-2 text-green-800 dark:text-green-300 font-medium">
+              Study Plan Calendar
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center mb-2 text-xs font-semibold text-green-600 dark:text-green-400">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <div key={day}>{day}</div>
+              ))}
+              {datesInRange.map((date) => {
+                const day = date.getDay();
+                const dayNum = date.getDate();
+                const isStudy = studyDayIndexes.includes(day);
+                const isPast = date < new Date(today.toDateString());
+                const current = isToday(date);
+                const streak = isStreakDate(date);
+                let className = "flex items-center justify-center relative h-8 w-8 rounded-full text-sm";
+                if (isStudy) className += " bg-green-100 text-green-700 font-semibold border";
+                if (current) className += " ring-2 ring-green-500";
+                if (isPast && !current) className += " text-green-300";
 
-            {plan.course_details && plan.course_details.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {plan.course_details.map((course) => (
-                  <article
-                    key={course.id}
-                    tabIndex={0}
-                    role="button"
-                    onClick={() => navigate(`/course/${course.id}`)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        navigate(`/course/${course.id}`);
-                      }
-                    }}
-                    className="rounded-2xl shadow-lg overflow-hidden cursor-pointer transform transition duration-300 hover:scale-[1.03] focus:outline-none focus:ring-4 focus:ring-primary/50 bg-gradient-to-tr"
-                    style={{ background: getGradientForCourse(course.id) }}
-                    aria-label={`View course ${course.course_name}`}
+                return (
+                  <div
+                    key={date.toISOString()}
+                    className={className + " transition"}
+                    title={`${date.toDateString()}${isStudy ? " (Study Day)" : ""}${streak ? " - Streak Day" : ""}`}
                   >
-                    <div className="relative h-48 flex items-center justify-center">
-                      <div className="absolute inset-0 bg-black/25 backdrop-blur-sm" />
-                      <h3 className="z-10 px-6 text-3xl font-extrabold text-white text-center line-clamp-2">
-                        {course.course_name}
-                      </h3>
-                      <div className="absolute top-3 right-3 z-20">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Play ${course.course_name}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/course/${course.id}`);
-                          }}
-                          className="bg-white/20 hover:bg-white/40 backdrop-blur-sm rounded-full"
-                        >
-                          <Play className="w-7 h-7 text-white" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="p-5 bg-white/20 backdrop-blur rounded-b-2xl">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-semibold bg-white/40 py-1 px-2 rounded-full text-white select-none pointer-events-none">
-                          Started
-                        </span>
-                        <span className="text-xs text-white/80 select-none pointer-events-none">
-                          Self Curated
-                        </span>
-                      </div>
+                    {dayNum}
 
-                      {/* Progress Bar */}
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-white font-medium">Progress</span>
-                        <span className="text-white font-semibold">
-                          {progressMap[course.id] ?? 0}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-white/40 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="bg-white h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${progressMap[course.id] ?? 0}%` }}
-                        />
+                    {/* Streak diagonal stripe overlay */}
+                    {streak && (
+                      <div
+                        aria-hidden="true"
+                        className="absolute inset-0 pointer-events-none rounded-full"
+                        style={{
+                          backgroundImage:
+                            "repeating-linear-gradient(45deg, rgba(34,197,94,0.4), rgba(34,197,94,0.4) 2px, transparent 2px, transparent 4px)",
+                        }}
+                      />
+                    )}
+
+                    {current && (
+                      <span className="absolute bottom-0 right-0 block w-1.5 h-1.5 rounded-full bg-white" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-xs text-right text-green-700 dark:text-green-300">
+              Study days highlighted | Today is outlined | Streak days have diagonal stripes
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {/* Courses */}
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold mb-4 text-green-900 dark:text-green-200 tracking-tight">
+          Courses
+        </h2>
+        {plan.course_details?.length ? (
+          <div className="space-y-4">
+            {plan.course_details.map((course) => {
+              const progress = progressMap[course.id] ?? 0;
+              const isExpanded = expandedCourses.has(course.id);
+              return (
+                <div
+                  key={course.id}
+                  className="bg-white dark:bg-gray-800 border border-green-100 dark:border-green-700 rounded shadow p-5 mb-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <button
+                        className="rounded p-2 bg-green-50 dark:bg-green-900 hover:bg-green-100 dark:hover:bg-green-800 border"
+                        tabIndex={0}
+                        aria-label={`Go to course ${course.course_name}`}
+                        onClick={() => navigate(`/course/${course.id}`)}
+                      >
+                        <Play size={18} className="text-green-700" />
+                      </button>
+                      <div className="font-semibold text-green-900 dark:text-green-300 text-lg">
+                        {course.course_name}
                       </div>
                     </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-600 dark:text-gray-400">No courses associated with this plan.</p>
-            )}
-          </section>
-        </CardContent>
-      </Card>
+                    <button
+                      onClick={() => toggleExpand(course.id)}
+                      className="text-green-600 hover:text-green-800 flex items-center gap-1 px-2 py-1"
+                      aria-expanded={isExpanded}
+                      aria-label={isExpanded ? "Collapse details" : "Expand details"}
+                    >
+                      Details
+                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  </div>
+                  <div className="mt-3">
+                    <div className="text-xs text-green-800 dark:text-green-200 mb-1">
+                      Progress: <span className="font-semibold">{progress}%</span>
+                    </div>
+                    <Progress
+                      value={progress}
+                      max={100}
+                      className="h-3 bg-green-50 dark:bg-green-900"
+                    >
+                      <div
+                        className="bg-green-400 h-3 transition-all"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </Progress>
+                    {isExpanded && (
+                      <div className="mt-3 border-t pt-3 text-green-900 dark:text-green-100 text-sm">
+                        <div>Notes: (Add note feature for this course...)</div>
+                        <div className="mt-1">More details to be filled in.</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-green-700 dark:text-green-300 text-sm pl-1">
+            No courses in this study plan.
+          </p>
+        )}
+      </section>
     </div>
   );
 };

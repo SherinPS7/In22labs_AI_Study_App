@@ -109,7 +109,20 @@ io.on("connection", (socket) => {
   });
 
   // (Optional) Handle leave/disconnect etc.
+
+    socket.on("joinProfile", (userId) => {
+    socket.join(`profile_${userId}`);
+  });
+  // Listen for profile interaction events (follow, unfollow, request)
+  socket.on("profileEvent", async ({ toUserId, type, fromUser }) => {
+    // Optionally, record these events or update DB here if needed
+
+    // Broadcast to the affected user's room only so they get real-time updates
+    io.to(`profile_${toUserId}`).emit("profileChanged", { type, fromUser });
+  });
 });
+
+app.set('io', io);
 
 // --- Boot the server (HTTP+Sockets) ---
 const startServer = async () => {
