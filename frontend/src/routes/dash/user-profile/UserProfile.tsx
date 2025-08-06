@@ -12,7 +12,7 @@ import AccomplishmentsTab from "@/components/user-profile/AccomplishmentsTab";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 export interface UserProfile {
   id: number;
   name: string;
@@ -57,7 +57,7 @@ export default function UserProfilePage() {
       try {
         setState(prev => ({ ...prev, loading: true, error: null }));
 
-        const session = await axios.get("http://localhost:3000/api/session/check-session", { 
+        const session = await axios.get(`${BASE_URL}/session/check-session`, { 
           withCredentials: true 
         });
 
@@ -67,11 +67,11 @@ export default function UserProfilePage() {
         const isOwn = currentUserId === profileUserId;
 
         const [profile, plans] = await Promise.all([
-          axios.get(`http://localhost:3000/api/profile/${profileUserId}`, { 
-            withCredentials: true 
+          axios.get(`${BASE_URL}/profile/${profileUserId}`, {
+            withCredentials: true
           }),
-          axios.get(`http://localhost:3000/api/studyplan/study-plans?userId=${profileUserId}`, { 
-            withCredentials: true 
+          axios.get(`${BASE_URL}/studyplan/study-plans?userId=${profileUserId}`, {
+            withCredentials: true
           }),
         ]);
 
@@ -99,7 +99,7 @@ export default function UserProfilePage() {
 
   const handleToggle = async (val: boolean) => {
     try {
-      const session = await axios.get("http://localhost:3000/api/session/check-session", { withCredentials: true });
+      const session = await axios.get(`${BASE_URL}/session/check-session`, { withCredentials: true });
       const currentUserId = session.data?.user?.userId?.toString();
 
       if (!currentUserId || currentUserId !== profileUserId) {
@@ -110,7 +110,7 @@ export default function UserProfilePage() {
       setState(prev => ({ ...prev, isPublic: val }));
 
       await axios.patch(
-        `http://localhost:3000/api/profile/${currentUserId}`,
+        `${BASE_URL}/profile/${currentUserId}`,
         { is_public: val },
         { withCredentials: true }
       );

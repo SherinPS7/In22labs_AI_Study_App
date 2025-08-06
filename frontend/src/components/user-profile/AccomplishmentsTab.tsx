@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import axios from "axios";
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 interface Props {
   isOwnProfile: boolean;
   userId: number | string;
@@ -22,7 +22,7 @@ export default function AccomplishmentsTab({ isOwnProfile, userId, userName }: P
     if (!userId) return;
     setLoading(true);
     axios
-      .get(`http://localhost:3000/api/profile/${userId}/accomplishments`)
+      .get(`${BASE_URL}/profile/${userId}/accomplishments`)
       .then(res => setCourses(res.data))
       .catch(() => setCourses([]))
       .finally(() => setLoading(false));
@@ -57,7 +57,7 @@ export default function AccomplishmentsTab({ isOwnProfile, userId, userName }: P
                 <button
                   className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition-colors"
                   onClick={() => {
-                    window.open(`http://localhost:3000/api/certificate/${course.id}`, "_blank");
+                    window.open(`${BASE_URL}/certificate/${course.id}`, "_blank");
                   }}
                 >
                   View Certificate

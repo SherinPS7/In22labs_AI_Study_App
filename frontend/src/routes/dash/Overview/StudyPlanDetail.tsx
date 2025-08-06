@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {  Play } from 'lucide-react';
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 // Course interface as per your API response
 interface Course {
   id: number;
@@ -76,7 +76,7 @@ const StudyPlanDetail: React.FC = () => {
     const fetchPlan = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`http://localhost:3000/api/studyplan/study-plans/${id}/with-courses`, {
+        const res = await axios.get(`${BASE_URL}/studyplan/study-plans/${id}/with-courses`, {
           withCredentials: true,
         });
         setPlan(res.data.studyPlan);
@@ -87,7 +87,7 @@ const StudyPlanDetail: React.FC = () => {
             res.data.studyPlan.course_details.map(async (course: Course) => {
               try {
                 const progressRes = await axios.get<{ watchedVideos: number; totalVideos: number }>(
-                  `http://localhost:3000/api/videos/course/progress/${course.id}`,
+                  `${BASE_URL}/videos/course/progress/${course.id}`,
                   { withCredentials: true }
                 );
                 const { watchedVideos, totalVideos } = progressRes.data;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 type Recommendation = {
   id: number;
   course_name: string;
@@ -47,7 +47,7 @@ const StartLearning = () => {
 useEffect(() => {
   const fetchRecommendations = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/recommendations', {
+      const response = await fetch(`${BASE_URL}/ai/recommendations`, {
         method: 'GET',
         credentials: 'include', // ✅ This allows cookies to be sent
       });

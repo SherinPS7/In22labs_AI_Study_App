@@ -38,7 +38,12 @@ router.get('/:groupId/messages', groupController.getGroupMessages);
 router.post('/:groupId/message', uploadPDF.single('file'), groupController.sendGroupMessage);
 
 // Optional: Upload only PDF without sending as message (optional utility)
+
 router.post('/:groupId/upload-pdf', uploadPDF.single('pdf'), groupController.uploadPDFToGroup);
+router.delete('/:groupId/messages/:messageId', groupController.deleteGroupMessage);
+
+// Delete multiple messages (batch)
+router.post('/:groupId/messages/batch-delete', groupController.deleteGroupMessages);
 router.post('/leave', groupController.leaveGroup);
 router.delete("/:groupId", groupController.deleteGroup);
 

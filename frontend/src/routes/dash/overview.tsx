@@ -13,6 +13,7 @@ import SearchBar from './Overview/searchbar';
 import axios from 'axios';
 import { Share2} from "lucide-react";
 import { toast } from "sonner";
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 interface StudyPlan {
   id: number;
@@ -48,7 +49,7 @@ const Overview = () => {
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        const res = await axios.get<SessionResponse>('http://localhost:3000/api/session/check-session', {
+        const res = await axios.get<SessionResponse>(`${BASE_URL}/session/check-session`, {
           withCredentials: true,
         });
         if (res.data.loggedIn) {

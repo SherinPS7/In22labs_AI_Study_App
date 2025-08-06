@@ -1,7 +1,7 @@
 import { LoginUserTypes } from '@/types/auth-types';
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 // ✅ Check if mobile exists (during signup)
 export async function checkMobileExists(mobile: string) {
@@ -60,7 +60,7 @@ export const GetCurrentSession = async () => {
 // ✅ Logout user
 export const LogoutUser = async () => {
   try {
-    const response = await axios.post(`http://localhost:3000/api/auth/logout`, {}, {
+    const response = await axios.post(`${BASE_URL}/auth/logout`, {}, {
       withCredentials: true,
     });
     return response.data;

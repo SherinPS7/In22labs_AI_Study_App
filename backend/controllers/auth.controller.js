@@ -24,9 +24,48 @@ exports.checkMobile = async (req, res) => {
 };
 
 // Final Signup (after OTP is verified on frontend)
+// exports.signup = async (req, res) => {
+//   try {
+//     // ✅ Validate incoming body
+//     const result = createUserSchema.safeParse(req.body);
+//     if (!result.success) {
+//       return res.status(400).json({
+//         message: "Validation failed",
+//         errors: result.error.flatten().fieldErrors,
+//       });
+//     }
+//   const { firstname, lastname, mobile, password } = result.data;
+//    //console.log("Backend received:", req.body);  // <-- add this line
+
+
+  
+//     // Optional: You may recheck if user already exists (safety)
+//     const existingUser = await User.findOne({ where: { mobile } });
+//     if (existingUser) {
+//       return res.status(400).json({ message: 'Mobile number already registered' });
+//     }
+
+//     // Hash password
+//     const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+//     // Create new user
+//     const newUser = await User.create({
+//       first_name:firstname,
+//       last_name:lastname,
+//       mobile,
+//       password: hashedPassword,
+//     });
+//     console.log("Created user:", newUser.toJSON());
+
+//     return res.status(200).json({ message: 'User created successfully', userId: newUser.id });
+//   } catch (err) {
+//     console.error('Error in signup:', err);
+//     res.status(500).json({ message: 'Signup error', error: err.message });
+//   }
+// };
 exports.signup = async (req, res) => {
   try {
-    // ✅ Validate incoming body
+    // Validate incoming body
     const result = createUserSchema.safeParse(req.body);
     if (!result.success) {
       return res.status(400).json({
@@ -34,12 +73,9 @@ exports.signup = async (req, res) => {
         errors: result.error.flatten().fieldErrors,
       });
     }
-  const { firstname, lastname, mobile, password } = result.data;
-   //console.log("Backend received:", req.body);  // <-- add this line
+    const { firstname, lastname, mobile, password } = result.data;
 
-
-  
-    // Optional: You may recheck if user already exists (safety)
+    // Optional recheck if user exists
     const existingUser = await User.findOne({ where: { mobile } });
     if (existingUser) {
       return res.status(400).json({ message: 'Mobile number already registered' });
@@ -50,19 +86,35 @@ exports.signup = async (req, res) => {
 
     // Create new user
     const newUser = await User.create({
-      first_name:firstname,
-      last_name:lastname,
+      first_name: firstname,
+      last_name: lastname,
       mobile,
       password: hashedPassword,
     });
     console.log("Created user:", newUser.toJSON());
 
-    return res.status(200).json({ message: 'User created successfully', userId: newUser.id });
+    // Setup session like login
+    req.session.userId = newUser.id;
+    req.session.firstname = newUser.first_name;
+    req.session.lastname = newUser.last_name;
+    req.session.mobile = newUser.mobile;
+
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).json({ message: 'Could not save session', error: err.message });
+      }
+
+      // Respond after session saved
+      return res.status(200).json({ message: 'User created successfully', userId: newUser.id });
+    });
+
   } catch (err) {
     console.error('Error in signup:', err);
     res.status(500).json({ message: 'Signup error', error: err.message });
   }
 };
+
 //  New: Sign In with mobile and password
 exports.login = async (req, res) => {
   const result = LoginUserSchema.safeParse(req.body);

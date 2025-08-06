@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 const views = ["month", "day"] as const;
 type View = (typeof views)[number];
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 type StudyPlan = {
     id: number;
   name: string;
@@ -114,7 +114,7 @@ export default function CalendarView() {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/plans/",
+        const res = await fetch(`${BASE_URL}/plans/`,
 
           {
              method: "GET",
