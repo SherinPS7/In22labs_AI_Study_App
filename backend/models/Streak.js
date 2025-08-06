@@ -1,16 +1,26 @@
 module.exports = (sequelize, DataTypes) => {
   const Streak = sequelize.define('Streak', {
-    last_active_date: DataTypes.DATE,
+    user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      unique: true, // one streak record per user
+    },
     count: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-    user_id: DataTypes.INTEGER,
+    best_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    last_active_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
+  }, {
+    timestamps: true, // adds createdAt, updatedAt
+    tableName: 'streaks',
   });
-
-  Streak.associate = models => {
-    Streak.belongsTo(models.User, { foreignKey: 'user_id' });
-  };
 
   return Streak;
 };

@@ -1,5 +1,5 @@
-// src/hooks/useStudyPlan.ts
 import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import {
   getAllStudyPlans,
   createStudyPlan,
@@ -44,7 +44,7 @@ export const useStudyPlan = (userId: number = 1) => {
     start_date: '',
     end_date: '',
     study_time: 60,
-    weekdays: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+    weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
       .reduce((acc, d) => ({ ...acc, [d]: true }), {} as WeekdaysObj),
   });
 
@@ -62,15 +62,18 @@ export const useStudyPlan = (userId: number = 1) => {
   const [todayStudied, setTodayStudied] = useState(0);
 
   // Utility: determine plan status
-  const getPlanStatus = useCallback((startDate: string, endDate: string): 'upcoming' | 'active' | 'completed' => {
-    const now = new Date();
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+  const getPlanStatus = useCallback(
+    (startDate: string, endDate: string): 'upcoming' | 'active' | 'completed' => {
+      const now = new Date();
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
-    if (now < start) return 'upcoming';
-    if (now > end) return 'completed';
-    return 'active';
-  }, []);
+      if (now < start) return 'upcoming';
+      if (now > end) return 'completed';
+      return 'active';
+    },
+    []
+  );
 
   // Fetch all plans for the user
   const fetchPlans = useCallback(async () => {
@@ -78,8 +81,7 @@ export const useStudyPlan = (userId: number = 1) => {
     setError('');
     try {
       const data = await getAllStudyPlans(userId);
-      const plansArray: StudyPlan[] =
-        data.plans || data.studyPlans || data || [];
+      const plansArray: StudyPlan[] = data.plans || data.studyPlans || data || [];
       setPlans(plansArray);
 
       // Find and set the active plan
@@ -95,23 +97,42 @@ export const useStudyPlan = (userId: number = 1) => {
     }
   }, [userId, getPlanStatus]);
 
-  // Fetch study logs from localStorage
-  const fetchStudyLogs = useCallback(() => {
+  // Fetch study logs & streak from backend Controller `/streaks/:userId` (GET)
+  const fetchStudyLogs = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      const savedLogs = localStorage.getItem(`studyLogs_${userId}`);
-      if (savedLogs) {
-        const logs: StudyLog[] = JSON.parse(savedLogs);
-        setStudyLogs(logs);
-        const today = new Date().toISOString().split('T')[0];
-        const todayLog = logs.find(log => log.date === today);
-        setTodayStudied(todayLog ? todayLog.minutesStudied : 0);
-      } else {
+      if (!userId) {
         setStudyLogs([]);
         setTodayStudied(0);
+        return;
       }
-    } catch {
+
+      const res = await axios.get(`/streak/${userId}`, { baseURL: 'http://localhost:3000/api' });
+      const { streak, activePlans, metrics } = res.data;
+
+      // From your controller, studyLogs should be assembled from metrics or activePlans if needed
+      // Here we'll fabricate studyLogs array using last7Days info or plan logs (adjust if API extended):
+      const logsFromMetrics = metrics?.last7Days?.map((day: any) => ({
+        date: day.date,
+        completed: day.studied,
+        minutesStudied: day.minutes,
+        planId: activePlans?.[0]?.id || null,
+      })) || [];
+
+      setStudyLogs(logsFromMetrics);
+
+      // For today studied time
+      const today = new Date().toLocaleDateString('en-CA');
+      const todayLog = logsFromMetrics.find(log => log.date === today || log.date === new Date().toLocaleDateString('en-US') || log.date === new Date().toISOString().slice(0,10));
+      setTodayStudied(todayLog ? todayLog.minutesStudied : 0);
+
+    } catch (error: any) {
+      setError('Failed to fetch study logs and streak');
       setStudyLogs([]);
       setTodayStudied(0);
+    } finally {
+      setLoading(false);
     }
   }, [userId]);
 
@@ -139,7 +160,6 @@ export const useStudyPlan = (userId: number = 1) => {
       setError('');
       setSuccess('');
       try {
-        // Validation
         if (!planForm.plan_name.trim()) throw new Error('Plan name is required');
         if (!planForm.start_date || !planForm.end_date)
           throw new Error('Start and end dates are required');
@@ -169,7 +189,7 @@ export const useStudyPlan = (userId: number = 1) => {
         }
 
         resetForm();
-        await fetchPlans(); // Re-fetch up-to-date plans
+        await fetchPlans();
       } catch (err: any) {
         setError(err.message || 'An error occurred while saving the plan');
       } finally {
@@ -205,7 +225,7 @@ export const useStudyPlan = (userId: number = 1) => {
       start_date: '',
       end_date: '',
       study_time: 60,
-      weekdays: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+      weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         .reduce((acc, d) => ({ ...acc, [d]: true }), {} as WeekdaysObj),
     });
     setShowCreateForm(false);
@@ -214,7 +234,7 @@ export const useStudyPlan = (userId: number = 1) => {
 
   // Start editing a plan
   const startEdit = useCallback((plan: StudyPlan) => {
-    const weekdaysObj: WeekdaysObj = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].reduce(
+    const weekdaysObj: WeekdaysObj = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].reduce(
       (acc, d) => ({ ...acc, [d]: plan.weekdays.includes(d) }),
       {} as WeekdaysObj
     );
@@ -237,40 +257,52 @@ export const useStudyPlan = (userId: number = 1) => {
     }));
   }, []);
 
-  // Add a study session to logs (UI should prompt user for minutes, not this hook)
-  const addStudySession = useCallback((minutes: number) => {
-    if (!activePlan) return;
-    if (!minutes || minutes <= 0) return;
-    const today = new Date().toISOString().split('T')[0];
-    const existingLogIndex = studyLogs.findIndex(log => log.date === today);
+  // Add a study session - calls your backend PATCH `/streaks/:userId`
+  const addStudySession = useCallback(
+    async (minutes: number) => {
+      if (!activePlan) {
+        setError('No active study plan selected');
+        return;
+      }
+      if (!minutes || minutes <= 0) {
+        setError('Invalid minutes entered');
+        return;
+      }
 
-    const newLog: StudyLog = {
-      date: today,
-      minutesStudied: minutes,
-      completed: minutes >= (activePlan.study_time || 60),
-      planId: activePlan.id,
-    };
+      setLoading(true);
+      setError('');
+      setSuccess('');
 
-    let updatedLogs: StudyLog[];
-    if (existingLogIndex >= 0) {
-      updatedLogs = [...studyLogs];
-      updatedLogs[existingLogIndex] = {
-        ...updatedLogs[existingLogIndex],
-        minutesStudied:
-          updatedLogs[existingLogIndex].minutesStudied + minutes,
-        completed:
-          (updatedLogs[existingLogIndex].minutesStudied + minutes) >=
-          (activePlan.study_time || 60),
-      };
-    } else {
-      updatedLogs = [...studyLogs, newLog];
-    }
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        // POST to /streak/:userId with session info per your controller's updateStreak
+        const res = await axios.post(
+          `/streak/${userId}`,
+          {
+            date: today,
+            completed: minutes >= (activePlan.study_time || 60),
+            minutesStudied: minutes,
+            planId: activePlan.id,
+          },
+          { baseURL: 'http://localhost:3000/api' }
+        );
 
-    setStudyLogs(updatedLogs);
-    setTodayStudied(prev => prev + minutes);
-    localStorage.setItem(`studyLogs_${userId}`, JSON.stringify(updatedLogs));
-    setSuccess(`Added ${minutes} minutes to today's study log!`);
-  }, [activePlan, studyLogs, userId]);
+        // On success, update local studyLogs and todayStudied from response
+        // Your controller returns streak info, so you might want to refetch logs or update state manually here
+
+        // For simplicity, let's refetch logs and plans again (to sync fresh data and metrics)
+        await fetchStudyLogs();
+        await fetchPlans();
+
+        setSuccess(`Added ${minutes} minutes to today's study log!`);
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to add study session');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [activePlan, userId, fetchStudyLogs, fetchPlans]
+  );
 
   return {
     // State
@@ -297,6 +329,6 @@ export const useStudyPlan = (userId: number = 1) => {
     handleToggleDay,
     addStudySession,
     fetchPlans,
-    fetchStudyLogs, // Optional for manual refresh
+    fetchStudyLogs,
   };
 };

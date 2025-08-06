@@ -68,7 +68,8 @@ module.exports = (sequelize, DataTypes) => {
     ref_study_plan_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
-    }
+    },
+   
   }, {
     tableName: 'StudyPlans',
     timestamps: true,

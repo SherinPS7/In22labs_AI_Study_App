@@ -65,6 +65,7 @@ const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
   const [selectedCourses, setSelectedCourses] = useState<Course[]>([]);
    const [loading, setLoading] = React.useState<boolean>(false);
    const [isLoadingExistingPlan, setIsLoadingExistingPlan] = useState(false);
+   
  const [studyPlanData, setStudyPlanData] = useState<StudyPlanData>({
   plan_name: '',
   start_date: '',
@@ -147,48 +148,65 @@ const handleSave = async () => {
   }
 };
 useEffect(() => {
-  if (isOpen && editingPlan) {
-    console.log('Opening edit for plan:', editingPlan.id);
-    loadExistingPlanData();
-  } else if (isOpen && !editingPlan) {
-    console.log('Creating new plan');
-    resetForm();
+  if (isOpen) {
+    if (editingPlan) {
+      loadExistingPlanData();
+    } else {
+      resetForm();
+    }
   }
 }, [isOpen, editingPlan]);
 
 
 const loadExistingPlanData = async () => {
   if (!editingPlan) return;
+  
   setIsLoadingExistingPlan(true);
   try {
     const response = await fetch(`http://localhost:3000/api/studyplan/${editingPlan.id}`);
     if (!response.ok) throw new Error('Failed to fetch plan details');
     const planDetails = await response.json();
-console.log('Loaded plan details:', planDetails);
 
-    setStudyPlanData({
+    // Initialize with default values if they don't exist
+    const initialData = {
       plan_name: editingPlan.plan_name,
       start_date: editingPlan.start_date,
       end_date: editingPlan.end_date,
-      start_time: planDetails.start_time || '17:00',  // <-- new field included here
+      start_time: planDetails.start_time || '17:00',
       course_ids: planDetails.course_ids || [],
       course_settings: planDetails.course_settings || {},
       sync_with_notion: planDetails.sync_with_notion || false,
       sync_with_google: planDetails.sync_with_google || false,
-    });
-    console.log('Loaded plan details:', planDetails);
+    };
 
+    // Initialize course settings with defaults for any missing courses
+    if (planDetails.course_ids) {
+      planDetails.course_ids.forEach((courseId: number) => {
+        if (!initialData.course_settings[courseId]) {
+          initialData.course_settings[courseId] = {
+            daily_hours: 1,
+            study_days: [],
+            start_time: initialData.start_time,
+            notes: ''
+          };
+        }
+      });
+    }
 
+    setStudyPlanData(initialData);
+
+    // Load detailed courses for course selection step
     if (planDetails.course_ids?.length > 0) {
       await loadSelectedCourses(planDetails.course_ids);
     }
   } catch (error) {
-    
+    console.error('Error loading plan data:', error);
     setError('Failed to load existing plan data');
   } finally {
     setIsLoadingExistingPlan(false);
   }
 };
+
 const loadSelectedCourses = async (courseIds: number[]) => {
   try {
     const res = await fetch(`http://localhost:3000/api/studyplan/courses-by-ids`, {
@@ -212,16 +230,16 @@ const resetForm = () => {
     plan_name: '',
     start_date: '',
     end_date: '',
-    start_time: '17:00',
+    start_time: '17:00', // Default start time
     course_ids: [],
     course_settings: {},
-    // sync_notion: false,
-    // sync_google: false,
+    sync_with_notion: false,
+    sync_with_google: false,
   });
   setError('');
   setLoading(false);
   setIsLoadingExistingPlan(false);
-}
+};
 
 
 
@@ -387,10 +405,11 @@ const CourseSelectionStep: React.FC<CourseSelectionStepProps> = ({
       setSelectedCourses(newSelectedCourses);
 
       const newCourseIds = newSelectedCourses.map(c => c.id);
-      setStudyPlanData((prev: any) => ({
-        ...prev,
-        course_ids: newCourseIds
-      }));
+     setStudyPlanData((prev: StudyPlanData) => ({
+  ...prev,
+  course_ids: newCourseIds
+}));
+
     }
   };
 
@@ -431,7 +450,7 @@ const CourseSelectionStep: React.FC<CourseSelectionStepProps> = ({
     >
       Plan Start Time
     </label>
-    <input
+    {/* <input
       id="plan-start-time"
       type="time"
       value={studyPlanData.start_time || '17:00'}
@@ -440,7 +459,16 @@ const CourseSelectionStep: React.FC<CourseSelectionStepProps> = ({
       min="00:00"
       max="23:59"
       required
-    />
+    /> */}
+    <input
+  id="plan-start-time"
+  type="time"
+  value={studyPlanData.start_time || '17:00'}
+  onChange={e => setStudyPlanData(prev => ({ ...prev, start_time: e.target.value }))}
+/>
+
+    
+    
   </div>
 
   {availableCourses.length === 0 ? (
@@ -589,7 +617,7 @@ const CourseScheduleStep: React.FC<CourseScheduleStepProps> = ({
       <p className="text-green-600 mb-4">Configure study time, start time, and days for each selected course</p>
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <label className="flex items-center space-x-2 text-sm font-medium text-blue-700">
+          {/* <label className="flex items-center space-x-2 text-sm font-medium text-blue-700">
             <input
               type="checkbox"
               checked={studyPlanData.sync_with_notion || false}
@@ -602,9 +630,9 @@ const CourseScheduleStep: React.FC<CourseScheduleStepProps> = ({
               className="h-4 w-4 text-blue-600"
             />
             <span>Sync with Notion</span>
-          </label>
+          </label> */}
 
-          <label className="flex items-center space-x-2 text-sm font-medium text-blue-700">
+          {/* <label className="flex items-center space-x-2 text-sm font-medium text-blue-700">
             <input
               type="checkbox"
               checked={studyPlanData.sync_with_google || false}
@@ -617,7 +645,7 @@ const CourseScheduleStep: React.FC<CourseScheduleStepProps> = ({
               className="h-4 w-4 text-blue-600"
             />
             <span>Sync with Google Calendar</span>
-          </label>
+          </label> */}
         </div>
       </div>
 
