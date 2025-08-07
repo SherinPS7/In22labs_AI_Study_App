@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const userFeaturesController = require('../controllers/userFeatures.controller');  // Importing the controller
+const userFeaturesController = require('../controllers/userFeatures.controller');
 
-// Route to save selected features
+router.post('/save-features', userFeaturesController.saveFeatures);
+router.post('/generate/related-topics', userFeaturesController.getRelatedTopics);
 
 module.exports = router;

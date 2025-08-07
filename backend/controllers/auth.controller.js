@@ -235,3 +235,55 @@ exports.logout = (req, res) => {
     return res.status(200).json({ message: 'No session to logout' });
   }
 };
+
+exports.getProfile = async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json({
+      user: {
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        mobile: user.mobile,
+        email: user.email || null,
+        createdAt: user.createdAt,
+        useGoogleCalendar: user.useGoogleCalendar || false,
+        useNotion: user.useNotion || false,
+      },
+    });
+  } catch (err) {
+    console.error('Profile fetch error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// ✅ Update preference toggles
+exports.updatePreferences = async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+    const { useGoogleCalendar, useNotion } = req.body;
+
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+     if (typeof useGoogleCalendar === 'boolean') {
+      user.useGoogleCalendar = useGoogleCalendar;
+    }
+    if (typeof useNotion === 'boolean') {
+      user.useNotion = useNotion;
+    }
+ await user.save();
+
+    return res.status(200).json({ message: 'Preferences updated' });
+  } catch (err) {
+    console.error('Preference update error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};

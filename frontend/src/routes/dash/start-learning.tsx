@@ -47,7 +47,7 @@ const StartLearning = () => {
 useEffect(() => {
   const fetchRecommendations = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/ai/recommendations`, {
+      const response = await fetch(`${BASE_URL}/recommendations/`, {
         method: 'GET',
         credentials: 'include', // ✅ This allows cookies to be sent
       });

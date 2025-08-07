@@ -45,6 +45,7 @@ app.get('/user/:id', async (req, res) => {
 // Health check routes
 app.get('/', (req, res) => res.send('Backend is running!'));
 app.get('/api', (req, res) => res.json({ message: 'API is working!' }));
+   // ✅ This is what was missing
 
 // 404 Handler for unknown API routes
 app.use((req, res) => {
@@ -157,7 +158,7 @@ const startServer = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ Database connected');
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ alter: false }); // Use force:true only in development to reset DB
     console.log('✅ Database synced');
     const PORT = process.env.PORT || 4000;
     http.listen(PORT, () => {
