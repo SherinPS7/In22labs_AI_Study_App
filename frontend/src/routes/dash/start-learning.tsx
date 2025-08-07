@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
 const BASE_URL = import.meta.env.VITE_BACKEND_URL;
@@ -7,7 +8,7 @@ type Recommendation = {
   course_name: string;
   user_id_foreign_key: number;
   first_video_url: string | null;
-  // first_video_thumbnail is now ignored
+  // first_video_thumbnail is ignored here
 };
 
 const getYouTubeId = (url: string | null): string | null => {
@@ -17,18 +18,16 @@ const getYouTubeId = (url: string | null): string | null => {
     const parsedUrl = new URL(url);
     const hostname = parsedUrl.hostname;
 
-    // Handle normal YouTube links (https://www.youtube.com/watch?v=xyz)
     if (hostname.includes('youtube.com')) {
       return parsedUrl.searchParams.get('v');
     }
 
-    // Handle shortened URLs (https://youtu.be/xyz)
     if (hostname.includes('youtu.be')) {
       return parsedUrl.pathname.split('/')[1];
     }
 
     return null;
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -43,6 +42,7 @@ const getThumbnailUrl = (videoUrl: string | null): string => {
 const StartLearning = () => {
   const [courses, setCourses] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
 useEffect(() => {
   const fetchRecommendations = async () => {
@@ -52,17 +52,17 @@ useEffect(() => {
         credentials: 'include', // ✅ This allows cookies to be sent
       });
 
-      const data = await response.json();
-      setCourses(data.recommendations || []);
-    } catch (error) {
-      console.error('Failed to fetch recommendations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const data = await response.json();
+        setCourses(data.recommendations || []);
+      } catch (error) {
+        console.error('Failed to fetch recommendations:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchRecommendations();
-}, []);
+    fetchRecommendations();
+  }, []);
 
   if (loading) {
     return <div className="text-center mt-6 text-muted-foreground">Loading recommendations...</div>;
@@ -81,7 +81,18 @@ useEffect(() => {
           const thumbnail = getThumbnailUrl(course.first_video_url);
 
           return (
-            <div key={course.id} className="bg-card rounded-2xl shadow-md overflow-hidden">
+            <div
+              key={course.id}
+              className="bg-card rounded-2xl shadow-md overflow-hidden cursor-pointer"
+              onClick={() => navigate(`/course/${course.id}`)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  navigate(`/course/${course.id}`);
+                }
+              }}
+            >
               <div className="relative h-48">
                 <img
                   src={thumbnail}
@@ -94,6 +105,10 @@ useEffect(() => {
                       href={course.first_video_url}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      tabIndex={0}
+                      aria-label={`Watch first video of ${course.course_name}`}
                     >
                       <Button
                         variant="ghost"

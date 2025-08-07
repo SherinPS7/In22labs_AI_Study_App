@@ -2,45 +2,71 @@ const { Op } = require('sequelize');
 const { User, Group, StudyPlan, Course } = require('../models');
 
 exports.searchMulti = async (req, res) => {
-  const query = req.query.query?.trim(); // ✅ fixed here
+  const query = req.query.query?.trim();
 
   if (!query) return res.status(400).json({ error: 'Search query is required' });
 
   try {
-    const [users, groups, studyPlans, courses] = await Promise.all([
+    const [users, groups, studyPlansRaw, coursesRaw] = await Promise.all([
       User.findAll({
         where: {
           [Op.or]: [
             { first_name: { [Op.iLike]: `%${query}%` } },
             { last_name: { [Op.iLike]: `%${query}%` } },
-          ]
+          ],
         },
-        attributes: ['id', 'first_name', 'last_name']
+        attributes: ['id', 'first_name', 'last_name'],
       }),
 
       Group.findAll({
         where: {
-          name: { [Op.iLike]: `%${query}%` },
+          group_name: { [Op.iLike]: `%${query}%` },
         },
-        attributes: ['id', 'name']
+        attributes: ['id', 'group_name'],
       }),
 
+      // Include User (creator) with StudyPlan
       StudyPlan.findAll({
         where: {
           plan_name: { [Op.iLike]: `%${query}%` },
         },
-        attributes: ['id', 'plan_name']
+        attributes: ['id', 'plan_name', 'user_id'],
+        include: [{
+          model: User,
+          as: 'user',          // ensure alias matches your model definition
+          attributes: ['id', 'first_name', 'last_name'],
+        }],
       }),
 
+      // Include User (creator) with Course
       Course.findAll({
         where: {
           course_name: { [Op.iLike]: `%${query}%` },
         },
-        attributes: ['id', 'course_name']
-      })
+        attributes: ['id', 'course_name', 'user_id_foreign_key'],
+        include: [{
+          model: User,
+          as: 'user',          // ensure alias matches your model definition
+          attributes: ['id', 'first_name', 'last_name'],
+        }],
+      }),
     ]);
 
-    res.json({ users, groups, studyPlans, courses }); // 👈 renamed 'plans' to 'studyPlans' for frontend consistency
+    // Map studyPlans to include a 'createdBy' property
+    const studyPlans = studyPlansRaw.map(sp => ({
+      id: sp.id,
+      plan_name: sp.plan_name,
+      createdBy: sp.user ? `${sp.user.first_name} ${sp.user.last_name}`.trim() : null,
+    }));
+
+    // Map courses to include a 'createdBy' property
+    const courses = coursesRaw.map(c => ({
+      id: c.id,
+      course_name: c.course_name,
+      createdBy: c.user ? `${c.user.first_name} ${c.user.last_name}`.trim() : null,
+    }));
+
+    res.json({ users, groups, studyPlans, courses });
   } catch (error) {
     console.error('❌ Error in searchMulti:', error);
     res.status(500).json({ error: 'Search failed on server' });

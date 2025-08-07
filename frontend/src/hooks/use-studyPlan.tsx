@@ -1,219 +1,308 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import {
   getAllStudyPlans,
   createStudyPlan,
   updateStudyPlan,
-  deleteStudyPlan
+  deleteStudyPlan,
 } from '@/api/studyplan';
 
-export const useStudyPlan = (userId = 1) => {
+// Types
+export interface StudyPlan {
+  id: number;
+  plan_name: string;
+  user_id: number;
+  start_date: string;
+  end_date: string;
+  weekdays: string[];
+  study_time: number;
+}
+
+export interface StudyLog {
+  date: string;
+  minutesStudied: number;
+  completed: boolean;
+  planId: number;
+}
+
+interface WeekdaysObj {
+  [key: string]: boolean;
+}
+
+interface PlanForm {
+  plan_name: string;
+  start_date: string;
+  end_date: string;
+  study_time: number;
+  weekdays: WeekdaysObj;
+}
+
+export const useStudyPlan = (userId: number = 1) => {
   // Form state for creating/editing plans
-  const [planForm, setPlanForm] = useState({
+  const [planForm, setPlanForm] = useState<PlanForm>({
     plan_name: '',
     start_date: '',
     end_date: '',
     study_time: 60,
-    weekdays: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].reduce((acc, d) => ({ ...acc, [d]: true }), {})
+    weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      .reduce((acc, d) => ({ ...acc, [d]: true }), {} as WeekdaysObj),
   });
 
   // State management
-  const [plans, setPlans] = useState([]);
+  const [plans, setPlans] = useState<StudyPlan[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingPlan, setEditingPlan] = useState(null);
+  const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   // Current plan tracking
-  const [activePlan, setActivePlan] = useState(null);
-  const [studyLogs, setStudyLogs] = useState([]);
+  const [activePlan, setActivePlan] = useState<StudyPlan | null>(null);
+  const [studyLogs, setStudyLogs] = useState<StudyLog[]>([]);
   const [todayStudied, setTodayStudied] = useState(0);
 
-  useEffect(() => {
-    fetchPlans();
-    // Initialize with sample data for demo
-    if (studyLogs.length === 0) {
-      const sampleLogs = [
-        { date: new Date().toISOString().split('T')[0], minutesStudied: 0, completed: false },
-        { date: new Date(Date.now() - 24*60*60*1000).toISOString().split('T')[0], minutesStudied: 90, completed: true },
-        { date: new Date(Date.now() - 2*24*60*60*1000).toISOString().split('T')[0], minutesStudied: 60, completed: true },
-      ];
-      setStudyLogs(sampleLogs);
+  // Utility: determine plan status
+  const getPlanStatus = useCallback(
+    (startDate: string, endDate: string): 'upcoming' | 'active' | 'completed' => {
+      const now = new Date();
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (now < start) return 'upcoming';
+      if (now > end) return 'completed';
+      return 'active';
+    },
+    []
+  );
+
+  // Fetch all plans for the user
+  const fetchPlans = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await getAllStudyPlans(userId);
+      const plansArray: StudyPlan[] = data.plans || data.studyPlans || data || [];
+      setPlans(plansArray);
+
+      // Find and set the active plan
+      const active = plansArray.find(plan =>
+        getPlanStatus(plan.start_date, plan.end_date) === 'active'
+      );
+      setActivePlan(active || null);
+    } catch (err: any) {
+      setError('Failed to fetch plans: ' + (err.message || String(err)));
+      setActivePlan(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, getPlanStatus]);
+
+  // Fetch study logs & streak from backend Controller `/streaks/:userId` (GET)
+  const fetchStudyLogs = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      if (!userId) {
+        setStudyLogs([]);
+        setTodayStudied(0);
+        return;
+      }
+
+      const res = await axios.get(`/streak/${userId}`, { baseURL: 'http://localhost:3000/api' });
+      const { streak, activePlans, metrics } = res.data;
+
+      // From your controller, studyLogs should be assembled from metrics or activePlans if needed
+      // Here we'll fabricate studyLogs array using last7Days info or plan logs (adjust if API extended):
+      const logsFromMetrics = metrics?.last7Days?.map((day: any) => ({
+        date: day.date,
+        completed: day.studied,
+        minutesStudied: day.minutes,
+        planId: activePlans?.[0]?.id || null,
+      })) || [];
+
+      setStudyLogs(logsFromMetrics);
+
+      // For today studied time
+      const today = new Date().toLocaleDateString('en-CA');
+      const todayLog = logsFromMetrics.find(log => log.date === today || log.date === new Date().toLocaleDateString('en-US') || log.date === new Date().toISOString().slice(0,10));
+      setTodayStudied(todayLog ? todayLog.minutesStudied : 0);
+
+    } catch (error: any) {
+      setError('Failed to fetch study logs and streak');
+      setStudyLogs([]);
       setTodayStudied(0);
+    } finally {
+      setLoading(false);
     }
   }, [userId]);
 
-  // Fetch all plans for the user
-  const fetchPlans = async () => {
-    try {
+  // Sync plans/logs on userId change
+  useEffect(() => {
+    fetchPlans();
+    fetchStudyLogs();
+  }, [userId, fetchPlans, fetchStudyLogs]);
+
+  // Update active plan when plans change
+  useEffect(() => {
+    if (plans.length > 0) {
+      const active = plans.find(plan =>
+        getPlanStatus(plan.start_date, plan.end_date) === 'active'
+      );
+      setActivePlan(active || null);
+    }
+  }, [plans, getPlanStatus]);
+
+  // Handle form submit (create or update)
+  const handleSubmit = useCallback(
+    async (e?: React.FormEvent) => {
+      if (e) e.preventDefault();
       setLoading(true);
-      console.log('Fetching plans for user:', userId);
-      const data = await getAllStudyPlans(userId);
-      console.log('API Response:', data);
-      
-      const plansArray = data.plans || data.studyPlans || data || [];
-      console.log('Plans array:', plansArray);
-      
-      setPlans(plansArray);
-      
-      const active = plansArray.find(p => new Date(p.end_date) >= new Date()) || plansArray[0];
-      setActivePlan(active);
-      
       setError('');
-    } catch (err) {
-      console.error('Error fetching plans:', err);
-      setError('Failed to fetch plans: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setSuccess('');
+      try {
+        if (!planForm.plan_name.trim()) throw new Error('Plan name is required');
+        if (!planForm.start_date || !planForm.end_date)
+          throw new Error('Start and end dates are required');
+        if (new Date(planForm.start_date) >= new Date(planForm.end_date))
+          throw new Error('End date must be after start date');
+        const selectedWeekdays = Object.entries(planForm.weekdays)
+          .filter(([, selected]) => selected)
+          .map(([day]) => day);
+        if (selectedWeekdays.length === 0)
+          throw new Error('Please select at least one study day');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
-  
-    try {
-      if (!planForm.plan_name.trim()) {
-        throw new Error('Plan name is required');
-      }
-      if (!planForm.start_date || !planForm.end_date) {
-        throw new Error('Start and end dates are required');
-      }
-      if (new Date(planForm.start_date) >= new Date(planForm.end_date)) {
-        throw new Error('End date must be after start date');
-      }
+        const planData = {
+          plan_name: planForm.plan_name.trim(),
+          user_id: userId,
+          start_date: planForm.start_date,
+          end_date: planForm.end_date,
+          weekdays: selectedWeekdays,
+          study_time: planForm.study_time,
+        };
 
-      const selectedWeekdays = Object.entries(planForm.weekdays)
-        .filter(([day, selected]) => selected)
-        .map(([day]) => day);
-      
-      if (selectedWeekdays.length === 0) {
-        throw new Error('Please select at least one study day');
+        if (editingPlan) {
+          await updateStudyPlan(editingPlan.id, planData);
+          setSuccess('Plan updated successfully!');
+        } else {
+          await createStudyPlan(planData);
+          setSuccess('Plan created successfully!');
+        }
+
+        resetForm();
+        await fetchPlans();
+      } catch (err: any) {
+        setError(err.message || 'An error occurred while saving the plan');
+      } finally {
+        setLoading(false);
       }
-  
-      const planData = {
-        plan_name: planForm.plan_name.trim(),
-        user_id: userId,
-        start_date: planForm.start_date,
-        end_date: planForm.end_date,
-        weekdays: selectedWeekdays,
-        study_time: planForm.study_time
-      };
+    },
+    [planForm, userId, editingPlan, fetchPlans]
+  );
 
-      console.log('Submitting plan data:', planData);
-  
-      let result;
-      if (editingPlan) {
-        result = await updateStudyPlan(editingPlan.id, planData);
-        console.log('Update result:', result);
-      } else {
-        result = await createStudyPlan(planData);
-        console.log('Create result:', result);
-      }
-  
-      setSuccess(editingPlan ? 'Plan updated successfully!' : 'Plan created successfully!');
-      
-      resetForm();
-      
-      setTimeout(() => {
-        fetchPlans();
-      }, 100);
-      
-    } catch (err) {
-      console.error('Submit error:', err);
-      setError(err.message || 'An error occurred while saving the plan');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (planId) => {
-    if (!confirm('Are you sure you want to delete this plan?')) return;
-
-    try {
+  // Delete a plan (UI should ask confirmation before calling this!)
+  const handleDelete = useCallback(
+    async (planId: number) => {
       setLoading(true);
-      console.log('Deleting plan:', planId);
-      await deleteStudyPlan(planId);
-      setSuccess('Plan deleted successfully!');
-      
-      setTimeout(() => {
-        fetchPlans();
-      }, 100);
-    } catch (err) {
-      console.error('Delete error:', err);
-      setError('An error occurred while deleting the plan: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setError('');
+      setSuccess('');
+      try {
+        await deleteStudyPlan(planId);
+        setSuccess('Plan deleted successfully!');
+        await fetchPlans();
+      } catch (err: any) {
+        setError('An error occurred while deleting the plan: ' + (err.message || String(err)));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchPlans]
+  );
 
-  const resetForm = () => {
+  // Reset the plan form and state
+  const resetForm = useCallback(() => {
     setPlanForm({
       plan_name: '',
       start_date: '',
       end_date: '',
       study_time: 60,
-      weekdays: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].reduce((acc, d) => ({ ...acc, [d]: true }), {})
+      weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        .reduce((acc, d) => ({ ...acc, [d]: true }), {} as WeekdaysObj),
     });
     setShowCreateForm(false);
     setEditingPlan(null);
-  };
+  }, []);
 
-  const startEdit = (plan) => {
-    const weekdaysObj = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].reduce((acc, d) => ({ 
-      ...acc, 
-      [d]: plan.weekdays.includes(d) 
-    }), {});
-
+  // Start editing a plan
+  const startEdit = useCallback((plan: StudyPlan) => {
+    const weekdaysObj: WeekdaysObj = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].reduce(
+      (acc, d) => ({ ...acc, [d]: plan.weekdays.includes(d) }),
+      {} as WeekdaysObj
+    );
     setPlanForm({
       plan_name: plan.plan_name,
       start_date: plan.start_date,
       end_date: plan.end_date,
       study_time: plan.study_time,
-      weekdays: weekdaysObj
+      weekdays: weekdaysObj,
     });
     setEditingPlan(plan);
     setShowCreateForm(true);
-  };
+  }, []);
 
-  const handleToggleDay = (day) => {
+  // Toggle day in plan form
+  const handleToggleDay = useCallback((day: string) => {
     setPlanForm(prev => ({
       ...prev,
-      weekdays: { ...prev.weekdays, [day]: !prev.weekdays[day] }
+      weekdays: { ...prev.weekdays, [day]: !prev.weekdays[day] },
     }));
-  };
+  }, []);
 
-  const addStudySession = () => {
-    const minutes = parseInt(prompt('How many minutes did you study today?', '0'));
-    if (minutes && minutes > 0) {
-      const today = new Date().toISOString().split('T')[0];
-      const existingLogIndex = studyLogs.findIndex(log => log.date === today);
-      
-      const newLog = {
-        date: today,
-        minutesStudied: minutes,
-        completed: minutes >= (activePlan?.study_time || 60),
-        planId: activePlan?.id
-      };
-      
-      if (existingLogIndex >= 0) {
-        const updatedLogs = [...studyLogs];
-        updatedLogs[existingLogIndex] = {
-          ...updatedLogs[existingLogIndex],
-          minutesStudied: updatedLogs[existingLogIndex].minutesStudied + minutes,
-          completed: (updatedLogs[existingLogIndex].minutesStudied + minutes) >= (activePlan?.study_time || 60)
-        };
-        setStudyLogs(updatedLogs);
-      } else {
-        setStudyLogs([...studyLogs, newLog]);
+  // Add a study session - calls your backend PATCH `/streaks/:userId`
+  const addStudySession = useCallback(
+    async (minutes: number) => {
+      if (!activePlan) {
+        setError('No active study plan selected');
+        return;
       }
-      
-      setTodayStudied(prev => prev + minutes);
-      setSuccess(`Added ${minutes} minutes to today's study log!`);
-    }
-  };
+      if (!minutes || minutes <= 0) {
+        setError('Invalid minutes entered');
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        // POST to /streak/:userId with session info per your controller's updateStreak
+        const res = await axios.post(
+          `/streak/${userId}`,
+          {
+            date: today,
+            completed: minutes >= (activePlan.study_time || 60),
+            minutesStudied: minutes,
+            planId: activePlan.id,
+          },
+          { baseURL: 'http://localhost:3000/api' }
+        );
+
+        // On success, update local studyLogs and todayStudied from response
+        // Your controller returns streak info, so you might want to refetch logs or update state manually here
+
+        // For simplicity, let's refetch logs and plans again (to sync fresh data and metrics)
+        await fetchStudyLogs();
+        await fetchPlans();
+
+        setSuccess(`Added ${minutes} minutes to today's study log!`);
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to add study session');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [activePlan, userId, fetchStudyLogs, fetchPlans]
+  );
 
   return {
     // State
@@ -227,7 +316,7 @@ export const useStudyPlan = (userId = 1) => {
     activePlan,
     studyLogs,
     todayStudied,
-    
+
     // Actions
     setPlanForm,
     setShowCreateForm,
@@ -239,6 +328,7 @@ export const useStudyPlan = (userId = 1) => {
     startEdit,
     handleToggleDay,
     addStudySession,
-    fetchPlans
+    fetchPlans,
+    fetchStudyLogs,
   };
 };

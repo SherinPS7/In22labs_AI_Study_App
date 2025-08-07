@@ -34,25 +34,26 @@ const overview = [
     url: "/feature-selection",
     icon: ChartArea,
   },
+    //   {
+    //   title : "Learn",
+    //   url : "/learn",
+    //   icon : Book
+    // },
+    // {
+    //   title : "Schedule",
+    //   url : "/schedule",
+    //   icon : Hourglass
+    // },
+    // {
+    //     title : "Tests",
+    //     url : "/rooms",
+    //     icon : NotebookPen
+    // }
+
 ];
 
-// const app = [
-//     {
-//       title : "Learn",
-//       url : "/learn",
-//       icon : Book
-//     },
-//     {
-//       title : "Schedule",
-//       url : "/schedule",
-//       icon : Hourglass
-//     },
-//     {
-//         title : "Tests",
-//         url : "/rooms",
-//         icon : NotebookPen
-//     }
-// ];
+
+
 
 const integrations = [
     {
@@ -64,10 +65,6 @@ const integrations = [
     title: "Groups",
     url: "/groups",
     icon: Users,
-  },{
-    title : "Notion",
-    url : "/connect-notion",
-    icon : NotionIcon
   }
 ]
 

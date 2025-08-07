@@ -92,7 +92,9 @@ const FeatureSelection = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+  
         },
+        credentials: "include", // Include credentials for session management
         body: JSON.stringify({ features: selectedFeatures }),
       });
 

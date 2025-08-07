@@ -9,6 +9,8 @@ const studyPlanRoutes = require('./routes/studyPlan.routes');
 const studyProgressRoutes = require('./routes/studyProgress');
 const path = require('path');
 
+
+
 // --- 🚦 Sanity check for env ---
 if (!process.env.DB_NAME || !process.env.DB_PASSWORD) {
   console.error('Missing essential environment variables. Check .env file.');
@@ -131,10 +133,24 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", () => {
+ 
+
+    socket.on("joinProfile", (userId) => {
+    socket.join(`profile_${userId}`);
+  });
+  // Listen for profile interaction events (follow, unfollow, request)
+  socket.on("profileEvent", async ({ toUserId, type, fromUser }) => {
+    // Optionally, record these events or update DB here if needed
+
+    // Broadcast to the affected user's room only so they get real-time updates
+    io.to(`profile_${toUserId}`).emit("profileChanged", { type, fromUser });
+  });
+   socket.on("disconnect", () => {
     console.log(`Socket disconnected: ${socket.id}`);
   });
 });
+
+ 
 
 // --- Boot the server (HTTP+Sockets) ---
 const startServer = async () => {

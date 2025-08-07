@@ -31,4 +31,5 @@ router.use('/group', require('./group.routes'));
 router.use('/notion', require('./notion.routes'));
 router.use('/profile', require('./userProfile.routes'));
 router.use('/search', require('./search.routes'));
+router.use('/streak', require('./streak.routes')); // Add this line for streak routes
 module.exports = router;

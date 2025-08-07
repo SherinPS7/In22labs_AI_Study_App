@@ -1,5 +1,3 @@
-'use strict';
-
 module.exports = (sequelize, DataTypes) => {
   const StudyPlan = sequelize.define('StudyPlan', {
     id: {
@@ -16,10 +14,9 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     group_id: {
-  type: DataTypes.INTEGER,
-  allowNull: true
-},
-
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     start_date: {
       type: DataTypes.DATEONLY,
       allowNull: false
@@ -37,6 +34,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
+    start_time: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        is: /^([01]\d|2[0-3]):([0-5]\d)$/ // Validates "HH:mm"
+      }
+    },
     course_ids: {
       type: DataTypes.JSON,
       allowNull: true,
@@ -52,26 +56,32 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: 0
     },
-    // ✅ NEW FIELDS
-    sync_with_notion: {
-      type: DataTypes.BOOLEAN,
+    save_count: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: false
+      defaultValue: 0,
     },
-    sync_with_google: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false
-    }
+    google_event_id: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    ref_study_plan_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+   
   }, {
-    tableName: 'StudyPlans', 
+    tableName: 'StudyPlans',
     timestamps: true,
     createdAt: 'created_at',
     updatedAt: 'updated_at'
   });
 
   StudyPlan.associate = function(models) {
-    // StudyPlan.belongsTo(models.User, { foreignKey: 'user_id' });
+    StudyPlan.belongsTo(models.User, {
+      foreignKey: 'user_id',
+      as: 'user'
+    });
   };
 
   return StudyPlan;

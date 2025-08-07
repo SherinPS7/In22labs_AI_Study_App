@@ -61,11 +61,16 @@ export const createStudyPlan = async (planData: CreateStudyPlanData) => {
   try {
     const response = await api.post('/studyplan/study-plans', planData);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
+    // If the error has a response with data, return it instead of throwing
+    if (error.response && error.response.data) {
+      return error.response.data;
+    }
     console.error('Error creating study plan:', error);
-    throw error;
+    throw error; // Re-throw if no response data available (network error etc)
   }
 };
+
 
 // Update a study plan
 export const updateStudyPlan = async (id: number, planData: Partial<CreateStudyPlanData>) => {
