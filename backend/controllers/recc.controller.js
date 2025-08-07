@@ -20,34 +20,46 @@ exports.getRecommendations = async (req, res) => {
       return res.status(404).json({ message: "No selected features found for this user." });
     }
 
-    const selectedKeywords = userFeatures.selected_features.map(k => k.toLowerCase());
+    // Helper: Normalize a string into tokens for matching
+    const normalizeTokens = (text) =>
+      text
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(Boolean);
 
-    // 2. Search Courses where course_name ILIKE matches any selected keyword (partial match)
+    // Tokenize all selected features into individual words
+    const selectedTokens = userFeatures.selected_features.flatMap(normalizeTokens);
+    // Remove duplicates
+    const uniqueTokens = Array.from(new Set(selectedTokens));
+
+    // 2. Search Courses where course_name ILIKE matches any selected token (partial match)
     const courseNameMatches = await Course.findAll({
       where: {
-        [Op.or]: selectedKeywords.map(keyword => ({
-          course_name: { [Op.iLike]: `%${keyword}%` }
+        [Op.or]: uniqueTokens.map(token => ({
+          course_name: { [Op.iLike]: `%${token}%` }
         }))
       },
-      include: [{ model: Keywords, attributes: ['keyword'] }] // included keywords for scoring
+      include: [{ model: Keywords, attributes: ['keyword'] }]
     });
     console.log(`🔍 Courses matched by course_name: found ${courseNameMatches.length}`);
 
     const scoredCoursesMap = new Map();
 
-    // Score for course name matches (+3) + keyword matches (+1 per keyword)
+    // Score for course name matches (+3) + keyword matches (+1 per token matched)
     courseNameMatches.forEach(course => {
       const courseNameLower = course.course_name.toLowerCase();
       let score = 0;
 
-      if (selectedKeywords.some(kw => courseNameLower.includes(kw))) {
+      // Match any token in course name to award 3 points total
+      if (uniqueTokens.some(token => courseNameLower.includes(token))) {
         score += 3;
       }
 
+      // Count how many tokens match keywords associated with the course
       let keywordMatchCount = 0;
       if (Array.isArray(course.Keywords)) {
         keywordMatchCount = course.Keywords.filter(k =>
-          selectedKeywords.some(sk => k.keyword.toLowerCase().includes(sk))
+          uniqueTokens.some(token => k.keyword.toLowerCase().includes(token))
         ).length;
       }
       score += keywordMatchCount;
@@ -57,14 +69,14 @@ exports.getRecommendations = async (req, res) => {
       console.log(`✅ Scored course (name match): ${course.course_name} with score ${score}`);
     });
 
-    // 3. If fewer than 3 matched, search keywords table excluding already matched courses (use Op.iLike for partial matching)
+    // 3. If fewer than 3 matched, search Keywords table excluding already matched courses
     if (scoredCoursesMap.size < 3) {
       const excludedCourseIds = Array.from(scoredCoursesMap.keys());
       console.log(`ℹ️ Less than 3 courses found by name. Searching keywords excluding:`, excludedCourseIds);
 
-      // Build partial matching OR conditions for keywords
-      const keywordConditions = selectedKeywords.map(kw => ({
-        keyword: { [Op.iLike]: `%${kw}%` }
+      // Build OR conditions for partial token matching on keywords
+      const keywordConditions = uniqueTokens.map(token => ({
+        keyword: { [Op.iLike]: `%${token}%` }
       }));
 
       const keywordMatches = await Keywords.findAll({
@@ -84,9 +96,9 @@ exports.getRecommendations = async (req, res) => {
 
         let score = 0;
         const courseKeywords = course.Keywords || [];
-        // Partial match count for keywords:
+        // Count token partial matches in course keywords
         const keywordMatchCount = courseKeywords.filter(k =>
-          selectedKeywords.some(sk => k.keyword.toLowerCase().includes(sk))
+          uniqueTokens.some(token => k.keyword.toLowerCase().includes(token))
         ).length;
         score += keywordMatchCount;
 
@@ -106,7 +118,7 @@ exports.getRecommendations = async (req, res) => {
       .slice(0, 3);
     console.log("🔝 Top courses after scoring and sorting:");
     scoredCoursesArray.forEach(({ course, score }, idx) => {
-      console.log(`   #${idx + 1}: ${course.course_name} (Score: ${score})`);
+      console.log(`   #${idx + 1}: ${course.course_name} (Score: ${score})`);
     });
 
     // 5. Fetch first videos for these top courses

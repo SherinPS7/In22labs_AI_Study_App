@@ -70,11 +70,13 @@ async getStreak(req, res) {
     // Calculate streak info
     const { currentStreak, bestStreak } = calculateStreakMetrics(studyLogs);
 
-    if (streak.count !== currentStreak || streak.best_count !== bestStreak) {
-      streak.count = currentStreak;
-      streak.best_count = bestStreak;
-      await streak.save();
-    }
+  if (streak.count !== currentStreak || streak.best_count !== bestStreak) {
+  streak.count = currentStreak;
+  streak.best_count = bestStreak;
+  streak.last_active_date = date;
+  await streak.save();
+}
+
 
     // Find today's log
     const todayDate = new Date().toISOString().slice(0, 10);

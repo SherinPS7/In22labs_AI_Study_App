@@ -254,3 +254,4 @@ export default function UserProfilePage() {
     </div>
   );
 }
+//durtion validation in gc
