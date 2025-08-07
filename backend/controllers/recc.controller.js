@@ -4,7 +4,7 @@ const { Op } = require("sequelize");
 exports.getRecommendations = async (req, res) => {
   const user_id_foreign_key = req.session.userId;
   if (!user_id_foreign_key) {
-    console.log("🚫 Unauthorized: No session user found.");
+    console.log("🚫 Unauthorized: No session use found.");
     return res.status(401).json({ message: "Unauthorized: No session user found." });
   }
 
