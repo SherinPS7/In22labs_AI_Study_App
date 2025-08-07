@@ -7,7 +7,7 @@ type Page = {
   id: string;
   title: string;
 };
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 const Notion = () => {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ const Notion = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/notion/status", {
+      .get(`${BASE_URL}/notion/status`, {
         withCredentials: true,
       })
       .then((res) => {
@@ -34,12 +34,12 @@ const Notion = () => {
   }, []);
 
   const handleConnect = () => {
-    window.location.href = "http://localhost:3000/api/notion/login";
+    window.location.href = `${BASE_URL}/notion/login`;
   };
 
 const fetchPages = async () => {
   try {
-    const res = await axios.get("http://localhost:3000/api/notion/fetched-pages", {
+    const res = await axios.get(`${BASE_URL}/notion/fetched-pages`, {
       withCredentials: true,
     });
     setPages(res.data.pages);
@@ -54,7 +54,7 @@ const fetchPages = async () => {
     try {
       setSaving(true);
       await axios.post(
-        "http://localhost:3000/api/notion/set-notion-page",
+        `${BASE_URL}/notion/set-notion-page`,
         { parent_page_id: pageId },
         { withCredentials: true }
       );

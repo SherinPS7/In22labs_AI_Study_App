@@ -5,7 +5,7 @@ import "./myLearning.css";
 import { Link } from "react-router-dom";
 import { MyLearningsBreadCrumbs } from "./breadcrumbs";
 import { Trash2 } from "lucide-react";
-
+import { toast } from "@/hooks/use-toast";
 
 const MyLearnings = () => {
   const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -86,31 +86,75 @@ const MyLearnings = () => {
     loadCoursesWithProgress();
   }, [backendURL, userId]);
 
-  const handleCreateCourse = async () => {
-    const trimmedName = newCourseName.trim();
-    if (!trimmedName) return;
+  // const handleCreateCourse = async () => {
+  //   const trimmedName = newCourseName.trim();
+  //   if (!trimmedName) return;
 
-    try {
-      setIsCreating(true);
+  //   try {
+  //     setIsCreating(true);
 
-      await axios.post(`${backendURL}/courses`, {
-        course_name: trimmedName
-      }, {
-        headers: { 'Content-Type': 'application/json' },
-        withCredentials: true,
+  //     await axios.post(`${backendURL}/courses`, {
+  //       course_name: trimmedName
+  //     }, {
+  //       headers: { 'Content-Type': 'application/json' },
+  //       withCredentials: true,
+  //     });
+
+  //     setNewCourseName("");
+  //     setShowModal(false);
+
+  //     await loadCoursesWithProgress(); // Refresh list with progress
+  //   } catch (error) {
+  //     console.error("Error creating course:", error);
+  //   } finally {
+  //     setIsCreating(false);
+  //   }
+  // };
+const handleCreateCourse = async () => {
+  const trimmedName = newCourseName.trim();
+  if (!trimmedName) return;
+
+  try {
+    setIsCreating(true);
+
+    await axios.post(`${backendURL}/courses`, {
+      course_name: trimmedName,
+    }, {
+      headers: { 'Content-Type': 'application/json' },
+      withCredentials: true,
+    });
+
+    setNewCourseName("");
+    setShowModal(false);
+
+    await loadCoursesWithProgress(); // Refresh list with progress
+
+    toast({
+      title: "Course Created",
+      description: "Your course was created successfully.",
+      variant: "default",
+    });
+
+  } catch (error: any) {
+    if (error.response?.status === 403) {
+      // Show toast for course limit reached
+      toast({
+        title: "Creation Limit Reached",
+        description: error.response.data?.error || "You can create only up to 5 courses.",
+        variant: "destructive",
       });
-
-      setNewCourseName("");
-      setShowModal(false);
-
-      await loadCoursesWithProgress(); // Refresh list with progress
-    } catch (error) {
-      console.error("Error creating course:", error);
-    } finally {
-      setIsCreating(false);
+    } else {
+      // Generic error toast
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "Failed to create course.",
+        variant: "destructive",
+      });
     }
-  };
-
+  } finally {
+    setIsCreating(false);
+  }
+};
   const filteredCourses = courses
     .filter(course =>
       course.course_name.toLowerCase().includes(searchTerm.trim().toLowerCase())

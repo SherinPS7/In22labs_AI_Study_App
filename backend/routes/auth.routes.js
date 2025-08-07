@@ -8,5 +8,9 @@ router.post("/login", authController.login); // <-- login route
 router.post("/reset-password", authController.resetPassword);
 router.post('/forgot/check-mobile', authController.checkMobileForReset);
 router.post('/logout',authController.logout);
+router.get('/profile', authController.getProfile);
+
+// ⚙ NEW: Update Google Calendar / Notion preferences
+router.post('/user/update-preferences', authController.updatePreferences);
 
 module.exports = router;

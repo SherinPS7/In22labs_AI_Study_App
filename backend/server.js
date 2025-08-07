@@ -20,6 +20,8 @@ if (!process.env.DB_NAME || !process.env.DB_PASSWORD) {
 // --- Express app setup ---
 const app = express();
 app.use('/certificates', express.static('public/certificates'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.use(cors({
   origin: 'http://localhost:5173',
   credentials: true,
@@ -43,6 +45,7 @@ app.get('/user/:id', async (req, res) => {
 // Health check routes
 app.get('/', (req, res) => res.send('Backend is running!'));
 app.get('/api', (req, res) => res.json({ message: 'API is working!' }));
+   // ✅ This is what was missing
 
 // 404 Handler for unknown API routes
 app.use((req, res) => {
@@ -70,45 +73,68 @@ const io = new Server(http, {
     credentials: true,
   }
 });
-
-
+app.set('io', io); // Make io accessible in routes/controllers
 
 // --- SOCKET.IO LOGIC (basic chat) ---
-const { GroupMessage, User } = require('./models'); // adjust as needed
+function isValidPdfLink(message) {
+  if (typeof message !== 'string') return false;
+
+  try {
+    const url = new URL(message);
+    return url.pathname.toLowerCase().endsWith('.pdf');
+  } catch (_) {
+    const trimmed = message.trim();
+    return trimmed.toLowerCase().endsWith('.pdf') && trimmed.includes('/');
+  }
+}
+const { GroupMessage, User } = require("./models");
 
 io.on("connection", (socket) => {
-  // User joins a group chat room
-  socket.on("joinGroup", (groupId) => {
-    socket.join("group_" + groupId);
+  // Personal room join
+  socket.on("register", ({ userId }) => {
+    if (userId) {
+      socket.join(`user_${userId}`);
+      console.log(`Socket ${socket.id} joined user_${userId}`);
+    }
   });
 
-  // User sends a message
-  socket.on("groupMessage", async ({ groupId, userId, message }) => {
+  // Join group chat room
+  socket.on("joinGroup", (groupId) => {
+    socket.join(`group_${groupId}`);
+    console.log(`Socket ${socket.id} joined group_${groupId}`);
+  });
+
+  // Receive group chat messages
+  socket.on("groupMessage", async ({ userId, groupId, message, isPdfLink }) => {
     try {
-      // Persist to DB
+      console.log('Received group message:', { groupId, userId, message, isPdfLink });
+
+    // Your PDF detection logic: 
+    const pdfFlag = typeof isPdfLink === 'boolean' ? isPdfLink : false;
+    console.log('Is detected as PDF:', pdfFlag);
       const groupMsg = await GroupMessage.create({
         group_id: groupId,
         sender_id: userId,
         message_text: message,
+        isPdfLink: !!isPdfLink,
       });
-      // Get sender info
-      const senderUser = await User.findByPk(userId, {
-        attributes: ["id", "first_name", "last_name"]
+      const sender = await User.findByPk(userId, {
+        attributes: ["id", "first_name", "last_name"],
       });
-      // Compose and broadcast
-      const msgObj = {
+
+      io.to(`group_${groupId}`).emit("newMessage", {
         id: groupMsg.id,
         message_text: groupMsg.message_text,
-        sender: senderUser,
+        sender: sender,
         createdAt: groupMsg.createdAt,
-      };
-      io.to("group_" + groupId).emit("newMessage", msgObj);
-    } catch (err) {
-      console.error('Socket.IO groupMessage error:', err);
+        isPdfLink: pdfFlag,
+      });
+    } catch (error) {
+      console.error("Error handling groupMessage:", error);
     }
   });
 
-  // (Optional) Handle leave/disconnect etc.
+ 
 
     socket.on("joinProfile", (userId) => {
     socket.join(`profile_${userId}`);
@@ -120,16 +146,19 @@ io.on("connection", (socket) => {
     // Broadcast to the affected user's room only so they get real-time updates
     io.to(`profile_${toUserId}`).emit("profileChanged", { type, fromUser });
   });
+   socket.on("disconnect", () => {
+    console.log(`Socket disconnected: ${socket.id}`);
+  });
 });
 
-app.set('io', io);
+ 
 
 // --- Boot the server (HTTP+Sockets) ---
 const startServer = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ Database connected');
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ alter: false }); // Use force:true only in development to reset DB
     console.log('✅ Database synced');
     const PORT = process.env.PORT || 4000;
     http.listen(PORT, () => {

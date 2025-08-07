@@ -14,6 +14,8 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
 export interface UserProfile {
   id: number;
   name: string;
@@ -45,7 +47,7 @@ export default function UserProfilePage() {
     isPublic: true,
     loading: true,
     isOwnProfile: false,
-    isFollowing: false, // Added isFollowing state
+    isFollowing: false,
     settingsOpen: false,
     error: null as string | null,
   });
@@ -56,7 +58,7 @@ export default function UserProfilePage() {
         setState((prev) => ({ ...prev, loading: true, error: null }));
 
         // Get current user's session
-        const session = await axios.get("http://localhost:3000/api/session/check-session", {
+        const session = await axios.get(`${BASE_URL}/session/check-session`, {
           withCredentials: true,
         });
         const currentUserId = session.data?.user?.userId?.toString();
@@ -65,23 +67,23 @@ export default function UserProfilePage() {
 
         const isOwn = currentUserId === profileUserId;
 
-        // Fetch profile and study plans in parallel
-        const [profileRes, plansRes] = await Promise.all([
-          axios.get(`http://localhost:3000/api/profile/${profileUserId}`, {
+        // Fetch profile and study plans concurrently
+        const [profile, plans] = await Promise.all([
+          axios.get(`${BASE_URL}/profile/${profileUserId}`, {
             withCredentials: true,
           }),
-          axios.get(`http://localhost:3000/api/studyplan/study-plans?userId=${profileUserId}`, {
+          axios.get(`${BASE_URL}/studyplan/study-plans?userId=${profileUserId}`, {
             withCredentials: true,
           }),
         ]);
 
         let isFollowing = false;
 
-        // If not own profile, fetch isFollowing flag
+        // If not own profile, fetch isFollowing status
         if (!isOwn) {
           try {
             const followRes = await axios.get(
-              `http://localhost:3000/api/profile/${profileUserId}/is-following`,
+              `${BASE_URL}/profile/${profileUserId}/is-following`,
               { withCredentials: true }
             );
             isFollowing = followRes.data?.isFollowing ?? false;
@@ -93,9 +95,9 @@ export default function UserProfilePage() {
 
         setState((prev) => ({
           ...prev,
-          user: profileRes.data,
-          studyPlans: plansRes.data.studyPlans || [],
-          isPublic: profileRes.data.is_public,
+          user: profile.data,
+          studyPlans: plans.data.studyPlans || [],
+          isPublic: profile.data.is_public,
           isOwnProfile: isOwn,
           isFollowing,
           loading: false,
@@ -114,7 +116,7 @@ export default function UserProfilePage() {
 
   const handleToggle = async (val: boolean) => {
     try {
-      const session = await axios.get("http://localhost:3000/api/session/check-session", {
+      const session = await axios.get(`${BASE_URL}/session/check-session`, {
         withCredentials: true,
       });
       const currentUserId = session.data.user?.userId?.toString();
@@ -122,7 +124,7 @@ export default function UserProfilePage() {
 
       setState((s) => ({ ...s, isPublic: val }));
       await axios.patch(
-        `http://localhost:3000/api/profile/${currentUserId}`,
+        `${BASE_URL}/profile/${currentUserId}`,
         { is_public: val },
         { withCredentials: true }
       );
@@ -164,7 +166,7 @@ export default function UserProfilePage() {
         />
       )}
 
-      {/* Profile visibility toggle for owner only */}
+      {/* Profile visibility toggle for owner only, uncomment if needed */}
       {/* {state.isOwnProfile && (
         <div className="flex items-center gap-2">
           <Label htmlFor="page-public-toggle">Public Profile</Label>
@@ -177,80 +179,73 @@ export default function UserProfilePage() {
       )} */}
 
       <UserProfileCard user={state.user} isOwnProfile={state.isOwnProfile} />
-<Tabs
-  defaultValue="studyplans"
-  // Optional: handle disabled TabsTrigger if needed
->
-  <TabsList className="w-full justify-start">
-    {/* Study Plans tab */}
-    <TabsTrigger value="studyplans"
-      disabled={!(state.isOwnProfile || state.isPublic || state.isFollowing)}
-    >
-      Study Plans
-    </TabsTrigger>
 
-    {/* Groups tab */}
-    <TabsTrigger value="groups"
-      disabled={!(state.isOwnProfile || state.isPublic || state.isFollowing)}
-    >
-      Groups
-    </TabsTrigger>
+      <Tabs defaultValue="studyplans">
+        <TabsList className="w-full justify-start">
+          <TabsTrigger
+            value="studyplans"
+            disabled={!(state.isOwnProfile || state.isPublic || state.isFollowing)}
+          >
+            Study Plans
+          </TabsTrigger>
+          <TabsTrigger
+            value="groups"
+            disabled={!(state.isOwnProfile || state.isPublic || state.isFollowing)}
+          >
+            Groups
+          </TabsTrigger>
+          <TabsTrigger
+            value="accomplishments"
+            disabled={!(state.isOwnProfile || state.isPublic || state.isFollowing)}
+          >
+            Accomplishments
+          </TabsTrigger>
+        </TabsList>
 
-    {/* Accomplishments tab */}
-    <TabsTrigger value="accomplishments"
-      disabled={!(state.isOwnProfile || state.isPublic || state.isFollowing)}
-    >
-      Accomplishments
-    </TabsTrigger>
-  </TabsList>
+        {(state.isOwnProfile || state.isPublic || state.isFollowing) ? (
+          <TabsContent value="studyplans">
+            <StudyPlansTab
+              studyPlans={state.studyPlans}
+              isOwnProfile={state.isOwnProfile}
+              userName={state.user.name}
+            />
+          </TabsContent>
+        ) : (
+          <TabsContent value="studyplans">
+            <div className="p-6 text-center text-muted-foreground">
+              <p>This profile is private. Please <strong>follow the user</strong> to see their study plans.</p>
+            </div>
+          </TabsContent>
+        )}
 
-  {/* Study Plans Content */}
-  {(state.isOwnProfile || state.isPublic || state.isFollowing) ? (
-    <TabsContent value="studyplans">
-      <StudyPlansTab
-        studyPlans={state.studyPlans}
-        isOwnProfile={state.isOwnProfile}
-        userName={state.user.name}
-      />
-    </TabsContent>
-  ) : (
-    <TabsContent value="studyplans">
-      <div className="p-6 text-center text-muted-foreground">
-        <p>This profile is private. Please <strong>follow the user</strong> to see their study plans.</p>
-      </div>
-    </TabsContent>
-  )}
+        {(state.isOwnProfile || state.isPublic || state.isFollowing) ? (
+          <TabsContent value="groups">
+            <GroupsTab isOwnProfile={state.isOwnProfile} userName={state.user.name} />
+          </TabsContent>
+        ) : (
+          <TabsContent value="groups">
+            <div className="p-6 text-center text-muted-foreground">
+              <p>This profile is private. Please <strong>follow the user</strong> to see their groups.</p>
+            </div>
+          </TabsContent>
+        )}
 
-  {/* Groups Content */}
-  {(state.isOwnProfile || state.isPublic || state.isFollowing) ? (
-    <TabsContent value="groups">
-      <GroupsTab isOwnProfile={state.isOwnProfile} userName={state.user.name} />
-    </TabsContent>
-  ) : (
-    <TabsContent value="groups">
-      <div className="p-6 text-center text-muted-foreground">
-        <p>This profile is private. Please <strong>follow the user</strong> to see their groups.</p>
-      </div>
-    </TabsContent>
-  )}
-
-  {/* Accomplishments Content */}
-  {(state.isOwnProfile || state.isPublic || state.isFollowing) ? (
-    <TabsContent value="accomplishments">
-      <AccomplishmentsTab
-        isOwnProfile={state.isOwnProfile}
-        userId={state.user.id}
-        userName={state.user.name}
-      />
-    </TabsContent>
-  ) : (
-    <TabsContent value="accomplishments">
-      <div className="p-6 text-center text-muted-foreground">
-        <p>This profile is private. Please <strong>follow the user</strong> to see their accomplishments.</p>
-      </div>
-    </TabsContent>
-  )}
-</Tabs>
+        {(state.isOwnProfile || state.isPublic || state.isFollowing) ? (
+          <TabsContent value="accomplishments">
+            <AccomplishmentsTab
+              isOwnProfile={state.isOwnProfile}
+              userId={state.user.id}
+              userName={state.user.name}
+            />
+          </TabsContent>
+        ) : (
+          <TabsContent value="accomplishments">
+            <div className="p-6 text-center text-muted-foreground">
+              <p>This profile is private. Please <strong>follow the user</strong> to see their accomplishments.</p>
+            </div>
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }

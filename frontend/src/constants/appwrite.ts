@@ -11,6 +11,6 @@ export const appwriteConstants = {
 }
 
 export const AppConstants = {
-    endpoint : import.meta.env.VITE_BASE_URL,
+    endpoint : import.meta.env.VITE_BACKEND_URL,
     geminiApi : import.meta.env.VITE_GEMINI_API_KEY,
 }

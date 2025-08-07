@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 type Recommendation = {
   id: number;
   course_name: string;
@@ -44,13 +44,13 @@ const StartLearning = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/api/recommendations', {
-          method: 'GET',
-          credentials: 'include', // Send cookies if needed
-        });
+useEffect(() => {
+  const fetchRecommendations = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/recommendations/`, {
+        method: 'GET',
+        credentials: 'include', // ✅ This allows cookies to be sent
+      });
 
         const data = await response.json();
         setCourses(data.recommendations || []);

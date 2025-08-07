@@ -118,7 +118,7 @@ const SearchBar = () => {
       >
         <div className="text-white text-sm font-medium">{labelFn(item)}</div>
         {creatorFn && (
-          <div className="text-xs text-gray-400 mt-0.5">Owner: {creatorFn(item)}</div>
+          <div className="text-xs text-gray-400 mt-0.5"> {creatorFn(item)}</div>
         )}
         <div className="text-xs text-gray-400">{typeLabel}</div>
       </li>

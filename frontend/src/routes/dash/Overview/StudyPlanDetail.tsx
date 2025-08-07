@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Play, ChevronDown, ChevronUp } from "lucide-react";
 import axios from "axios";
 import { Progress } from "@radix-ui/react-progress";
-
+import { toast } from "sonner";
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 // Data interfaces
 interface Course {
   id: number;
@@ -103,7 +104,7 @@ const StudyPlanDetail: React.FC = () => {
     (async () => {
       try {
         const { data } = await axios.get(
-          `http://localhost:3000/api/studyplan/study-plans/${id}/with-courses`,
+          `${BASE_URL}/studyplan/study-plans/${id}/with-courses`,
           { withCredentials: true }
         );
         setPlan(data.studyPlan);
@@ -114,7 +115,7 @@ const StudyPlanDetail: React.FC = () => {
             data.studyPlan.course_details.map(async (course: Course) => {
               try {
                 const resp = await axios.get(
-                  `http://localhost:3000/api/videos/course/progress/${course.id}`,
+                  `${BASE_URL}/videos/course/progress/${course.id}`,
                   { withCredentials: true }
                 );
                 const { watchedVideos, totalVideos } = resp.data;

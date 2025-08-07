@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
 import axios from 'axios';
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 interface Course {
   id: number;
   course_name: string;
@@ -35,7 +35,7 @@ const ContinueLearning = () => {
     const fetchCoursesAndProgress = async () => {
       try {
         const courseRes = await axios.get<Course[]>(
-          'http://localhost:3000/api/courses/user',
+          `${BASE_URL}/courses/user`,
           { withCredentials: true }
         );
         const fetchedCourses = courseRes.data;
@@ -45,7 +45,7 @@ const ContinueLearning = () => {
           fetchedCourses.map(async (course) => {
             try {
               const progressRes = await axios.get<CourseProgress>(
-                `http://localhost:3000/api/videos/course/progress/${course.id}`,
+                `${BASE_URL}/videos/course/progress/${course.id}`,
                 { withCredentials: true }
               );
               const { watchedVideos, totalVideos } = progressRes.data;

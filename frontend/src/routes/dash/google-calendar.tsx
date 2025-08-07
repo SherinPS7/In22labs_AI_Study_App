@@ -26,7 +26,7 @@ const views = ["month", "day"] as const;
 type View = (typeof views)[number];
 
 type UserType = { id: number; name?: string; /* other user fields */ };
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 type StudyPlan = {
   id: number;
   name: string;
@@ -141,7 +141,7 @@ export default function CalendarView() {
   const fetchPlans = async () => {
     if (!user) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/studyplan/study-plans?userId=${user.userId}`, {
+      const res = await fetch(`${BASE_URL}/study-plans?userId=${user.userId}`, {
         method: "GET",
         credentials: "include",
       });

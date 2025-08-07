@@ -21,6 +21,7 @@ import { NotionIcon } from "./notion-icon";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { User } from "lucide-react"; // Add User icon
+const BASE_URL = import.meta.env.VITE_BACKEND_URL; // Use the correct environment variable
 // Menu items.
 const overview = [
   {
@@ -94,7 +95,7 @@ export function AppSidebar() {
   useEffect(() => {
   const fetchUserId = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/session/check-session", {
+      const res = await axios.get(`${BASE_URL}/session/check-session`, {
         withCredentials: true,
       });
       const id = res.data?.user?.userId; // ✅ Fix: use userId, not id

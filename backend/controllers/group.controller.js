@@ -42,7 +42,10 @@ exports.createGroup = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
+async function isGroupAdmin(groupId, userId) {
+  const member = await GroupMember.findOne({ where: { group_id: groupId, user_id: userId } });
+  return member?.is_admin === true;
+}
 // ✅ Get all groups the user is a member of
 // exports.getMyGroups = async (req, res) => {
 //   try {
@@ -148,7 +151,19 @@ exports.requestToJoinGroup = async (req, res) => {
 
     // ✅ Create join request
     await GroupJoinRequest.create({ group_id: group.id, user_id: userId });
+    const newRequest = await GroupJoinRequest.findOne({
+      where: { group_id: group.id, user_id: userId },
+      include: [{ model: User, attributes: ['id', 'first_name', 'last_name'] }],
+    });
 
+    // Emit real-time update
+    const io = req.app.get('io');
+    if (io && newRequest) {
+      io.to(`group_${group.id}`).emit('joinRequestUpdate', {
+        type: 'add',
+        request: newRequest,
+      });
+    }
     res.status(200).json({ message: 'Join request sent' });
   } catch (err) {
     console.error('🔥 Join request error:', err);
@@ -159,36 +174,65 @@ exports.requestToJoinGroup = async (req, res) => {
 
 // Approve Join Request
 
+
 exports.approveJoinRequest = async (req, res) => {
   try {
     const { groupId, requestId } = req.params;
     const userId = req.session.userId;
 
+    // Find the group
     const group = await Group.findByPk(groupId);
     if (!group) return res.status(404).json({ message: 'Group not found' });
 
-    // 🔒 Only admin can approve
+    // Check if requester is admin
     if (group.created_by !== userId) {
       return res.status(403).json({ message: 'Forbidden: Not group admin' });
     }
 
+    // Find the join request
     const request = await GroupJoinRequest.findByPk(requestId);
     if (!request) return res.status(404).json({ message: 'Request not found' });
 
+    // Add user to group members
     await GroupMember.create({
       group_id: groupId,
       user_id: request.user_id,
       role: 'member',
     });
 
+    // Delete the join request after approval
     await request.destroy();
 
-    res.status(200).json({ message: 'User added to group' });
+    // Emit real-time updates via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      // Notify the group that the request has been removed (for admins/UI updating request list)
+      io.to(`group_${groupId}`).emit('joinRequestUpdate', {
+        type: 'remove',
+        requestId: requestId,
+      });
+      // Additionally, notify the user who was just added, so their "joined groups" list updates instantly
+      io.to(`user_${request.user_id}`).emit('groupsUpdated', {
+        message: 'You have been added to a new group',
+        // Optionally, you can send the new group info here for instant update without refetching
+        group: {
+          id: group.id,
+          group_name: group.group_name,
+          created_by: group.created_by,
+          createdAt: group.createdAt,
+          // Add other fields as needed
+        },
+      });
+    }
+
+    // Send success response
+    return res.status(200).json({ message: 'User added to group' });
   } catch (err) {
-    console.error('Approve error:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Approve join request error:', err);
+    return res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 
 // Reject Join Request
@@ -210,6 +254,13 @@ exports.rejectJoinRequest = async (req, res) => {
     }
 
     await request.destroy();
+     const io = req.app.get('io');
+    if (io) {
+      io.to(`group_${group.id}`).emit('joinRequestUpdate', {
+        type: 'remove',
+        requestId: requestId,
+      });
+    }
 
     res.status(200).json({ message: 'Request rejected' });
   } catch (err) {
@@ -335,6 +386,7 @@ exports.sendGroupMessage = async (req, res) => {
   group_id: groupId,
   sender_id: userId,
   message_text: message_type === 'text' ? content : filePath,
+  isPdfLink: !!isPdfLink,
 });
 
 
@@ -412,5 +464,159 @@ exports.deleteGroup = async (req, res) => {
   } catch (err) {
     console.error("Delete group error:", err);
     res.status(500).json({ message: "Server error" });
+  }
+};
+exports.removeMember = async (req, res) => {
+  try {
+    const groupId = Number(req.params.groupId);
+    const userIdToRemove = Number(req.params.userId);
+    const requestingUserId = req.session.userId;
+
+    if (!groupId || !userIdToRemove) {
+      return res.status(400).json({ message: 'Invalid group or user ID' });
+    }
+
+    // Check if requesting user is admin of the group
+    const isAdmin = await isGroupAdmin(groupId, requestingUserId);
+    if (!isAdmin) {
+      return res.status(403).json({ message: 'Only admins can remove members' });
+    }
+
+    // Prevent admin from removing themselves (optional)
+    if (userIdToRemove === requestingUserId) {
+      return res.status(400).json({ message: 'Admins cannot remove themselves' });
+    }
+
+    const member = await GroupMember.findOne({ where: { group_id: groupId, user_id: userIdToRemove } });
+    if (!member) {
+      return res.status(404).json({ message: 'Member not found' });
+    }
+
+    await member.destroy();
+      // Emit socket event to group room
+    if (req.app.get('io')) { // assuming you passed io to app locals
+      req.app.get('io').to(`group_${groupId}`).emit('memberRemoved', {
+        groupId,
+        userId: userIdToRemove,
+      });
+    }
+
+    res.status(200).json({ message: 'Member removed from group successfully' });
+  } catch (err) {
+    console.error('Remove member error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.deleteGroupMessage = async (req, res) => {
+  try {
+    const groupId = Number(req.params.groupId);
+    const messageId = Number(req.params.messageId);
+    const userId = req.session.userId;
+
+    if (!groupId || !messageId) {
+      return res.status(400).json({ message: 'Invalid group or message ID' });
+    }
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // Find the message
+    const message = await GroupMessage.findOne({
+      where: { id: messageId, group_id: groupId },
+    });
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Get membership info and check admin status
+    const member = await GroupMember.findOne({
+      where: { group_id: groupId, user_id: userId },
+    });
+    if (!member) {
+      return res.status(403).json({ message: 'You are not a member of this group' });
+    }
+
+    const isAdmin = member.is_admin === true;
+
+    // Authorization check
+    if (!isAdmin && message.sender_id !== userId) {
+      return res.status(403).json({ message: 'Forbidden: cannot delete this message' });
+    }
+
+    // Hard delete the message
+    await GroupMessage.destroy({ where: { id: messageId } });
+
+    // Emit Socket.IO event to notify clients
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`group_${groupId}`).emit('messageDeleted', {
+        groupId,
+        messageId,
+      });
+    }
+
+    return res.status(200).json({ message: 'Message deleted successfully' });
+  } catch (error) {
+    console.error('Delete message error', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.deleteGroupMessages = async (req, res) => {
+  try {
+    const groupId = Number(req.params.groupId);
+    const messageIds = req.body.messageIds; // expects { messageIds: [1,2,3] }
+    const userId = req.session.userId;
+
+    if (!groupId || !Array.isArray(messageIds) || messageIds.length === 0) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // Check membership and role
+    const member = await GroupMember.findOne({
+      where: { group_id: groupId, user_id: userId },
+    });
+    if (!member) {
+      return res.status(403).json({ message: 'Not a group member' });
+    }
+    const isAdmin = member.is_admin === true;
+
+    // Fetch messages to delete
+    const messages = await GroupMessage.findAll({
+      where: { id: messageIds, group_id: groupId },
+    });
+
+    // For non-admin users, restrict deletion to own messages only
+    if (!isAdmin) {
+      const notOwned = messages.filter((msg) => msg.sender_id !== userId);
+      if (notOwned.length > 0) {
+        return res.status(403).json({ message: "Cannot delete others' messages" });
+      }
+    }
+
+    // Hard delete all found messages
+    await GroupMessage.destroy({
+      where: { id: messages.map((m) => m.id) },
+    });
+
+    // Emit real-time deletion event via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`group_${groupId}`).emit('messagesDeleted', {
+        groupId,
+        messageIds: messages.map((m) => m.id),
+      });
+    }
+
+    return res.status(200).json({ message: 'Messages deleted successfully', ids: messages.map((m) => m.id) });
+  } catch (error) {
+    console.error('Batch delete error:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 };

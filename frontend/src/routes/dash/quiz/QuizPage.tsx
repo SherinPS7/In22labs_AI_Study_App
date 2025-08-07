@@ -10,7 +10,7 @@ type QuizQuestions = Question[];
 
 type Result = { score: number; passed: boolean; createdAt: string };
 
-const QUIZ_DURATION = 2 * 60; // 45 minutes
+const QUIZ_DURATION = 45 * 60; // 45 minutes
 
 const QuizPage = () => {
   const { state } = useLocation();
