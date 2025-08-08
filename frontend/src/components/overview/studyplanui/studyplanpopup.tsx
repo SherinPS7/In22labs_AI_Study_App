@@ -49,6 +49,7 @@ interface StudyPlanPopupProps {
   setSuccess: (message: string) => void;
   setError: (message: string) => void;
   onPlanUpdate: () => void;
+
 }
 
 
@@ -455,7 +456,7 @@ const CourseSelectionStep: React.FC<CourseSelectionStepProps> = ({
       id="plan-start-time"
       type="time"
       value={studyPlanData.start_time || '17:00'}
-      onChange={e => setStudyPlanData(prev => ({ ...prev, start_time: e.target.value }))}
+      onChange={e => setStudyPlanData((prev: StudyPlanData) => ({ ...prev, start_time: e.target.value }))}
       className="border rounded-md p-2 w-32 text-black"
       min="00:00"
       max="23:59"
@@ -662,7 +663,7 @@ const CourseScheduleStep: React.FC<CourseScheduleStepProps> = ({
           return (
   <Card key={course.id} className="border-gray-200">
     <CardContent className="p-4">
-      <h4 className="font-semibold text-white-900 mb-3">{course.course_name.toUpperCase()}</h4>
+      <h4 className="font-semibold text-black-900 mb-3">{course.course_name.toUpperCase()}</h4>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
