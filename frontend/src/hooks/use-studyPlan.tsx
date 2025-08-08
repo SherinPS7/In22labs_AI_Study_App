@@ -37,18 +37,18 @@ interface PlanForm {
   weekdays: WeekdaysObj;
 }
 
-export const useStudyPlan = (userId: number = 1) => {
-  // Form state for creating/editing plans
+export const useStudyPlan = (userId?: number) => {  // make userId optional
+  // form state for create/edit plans
   const [planForm, setPlanForm] = useState<PlanForm>({
     plan_name: '',
     start_date: '',
     end_date: '',
     study_time: 60,
-    weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    weekdays: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
       .reduce((acc, d) => ({ ...acc, [d]: true }), {} as WeekdaysObj),
   });
 
-  // State management
+  // state management
   const [plans, setPlans] = useState<StudyPlan[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);
@@ -56,12 +56,10 @@ export const useStudyPlan = (userId: number = 1) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Current plan tracking
   const [activePlan, setActivePlan] = useState<StudyPlan | null>(null);
   const [studyLogs, setStudyLogs] = useState<StudyLog[]>([]);
   const [todayStudied, setTodayStudied] = useState(0);
 
-  // Utility: determine plan status
   const getPlanStatus = useCallback(
     (startDate: string, endDate: string): 'upcoming' | 'active' | 'completed' => {
       const now = new Date();
@@ -75,21 +73,22 @@ export const useStudyPlan = (userId: number = 1) => {
     []
   );
 
-  // Fetch all plans for the user
   const fetchPlans = useCallback(async () => {
+    if (!userId) return;  // early exit if no userId
     setLoading(true);
     setError('');
     try {
       const data = await getAllStudyPlans(userId);
+      console.log('Fetched plans:', data); // debugging
       const plansArray: StudyPlan[] = data.plans || data.studyPlans || data || [];
       setPlans(plansArray);
 
-      // Find and set the active plan
       const active = plansArray.find(plan =>
         getPlanStatus(plan.start_date, plan.end_date) === 'active'
       );
       setActivePlan(active || null);
     } catch (err: any) {
+      console.error('Error fetching plans:', err);
       setError('Failed to fetch plans: ' + (err.message || String(err)));
       setActivePlan(null);
     } finally {
@@ -97,59 +96,51 @@ export const useStudyPlan = (userId: number = 1) => {
     }
   }, [userId, getPlanStatus]);
 
-  // Fetch study logs & streak from backend Controller `/streaks/:userId` (GET)
   const fetchStudyLogs = useCallback(async () => {
+    if (!userId) {
+      setStudyLogs([]);
+      setTodayStudied(0);
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      if (!userId) {
-        setStudyLogs([]);
-        setTodayStudied(0);
-        return;
-      }
-
+      console.log('Fetching study logs for userId:', userId); // debugging
       const res = await axios.get(`/streak/${userId}`, { baseURL: 'http://localhost:3000/api' });
-      const { streak, activePlans, metrics } = res.data;
+      console.log('Fetched streak response:', res.data); // debugging
 
-      // From your controller, studyLogs should be assembled from metrics or activePlans if needed
-      // Here we'll fabricate studyLogs array using last7Days info or plan logs (adjust if API extended):
-      // const logsFromMetrics = metrics?.last7Days?.map((day: any) => ({
-      //   date: day.date,
-      //   completed: day.studied,
-      //   minutesStudied: day.minutes,
-      //   planId: activePlans?.[0]?.id || null,
-      // })) || [];
-      const logsFromMetrics: StudyLog[] = metrics?.last7Days?.map((day: any) => ({
-  date: day.date,
-  completed: day.studied,
-  minutesStudied: day.minutes,
-  planId: activePlans?.[0]?.id || null,
-})) || [];
+      const { streak, last7Days, todayStudy } = res.data;
 
+      const logsFrom7Days = last7Days?.map((day: any) => ({
+        date: day.date,
+        completed: day.studied,
+        minutesStudied: day.minutesStudied,
+        planId: activePlan?.id || null,
+      })) || [];
 
-      setStudyLogs(logsFromMetrics);
+      setStudyLogs(logsFrom7Days);
 
-      // For today studied time
-      const today = new Date().toLocaleDateString('en-CA');
-      const todayLog = logsFromMetrics.find(log => log.date === today || log.date === new Date().toLocaleDateString('en-US') || log.date === new Date().toISOString().slice(0,10));
+      const today = new Date().toISOString().slice(0,10);
+      const todayLog = logsFrom7Days.find(log => log.date === today);
       setTodayStudied(todayLog ? todayLog.minutesStudied : 0);
-
     } catch (error: any) {
+      console.error('Error fetching study logs and streak:', error);
       setError('Failed to fetch study logs and streak');
       setStudyLogs([]);
       setTodayStudied(0);
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, activePlan?.id]);
 
-  // Sync plans/logs on userId change
+  // Trigger fetching plans and logs when userId changes
   useEffect(() => {
+    if (!userId) return;
     fetchPlans();
     fetchStudyLogs();
   }, [userId, fetchPlans, fetchStudyLogs]);
 
-  // Update active plan when plans change
+  // React to plan updates to reset active plan
   useEffect(() => {
     if (plans.length > 0) {
       const active = plans.find(plan =>
@@ -159,7 +150,6 @@ export const useStudyPlan = (userId: number = 1) => {
     }
   }, [plans, getPlanStatus]);
 
-  // Handle form submit (create or update)
   const handleSubmit = useCallback(
     async (e?: React.FormEvent) => {
       if (e) e.preventDefault();
@@ -168,10 +158,10 @@ export const useStudyPlan = (userId: number = 1) => {
       setSuccess('');
       try {
         if (!planForm.plan_name.trim()) throw new Error('Plan name is required');
-        if (!planForm.start_date || !planForm.end_date)
-          throw new Error('Start and end dates are required');
+        if (!planForm.start_date || !planForm.end_date) throw new Error('Start and end dates are required');
         if (new Date(planForm.start_date) >= new Date(planForm.end_date))
           throw new Error('End date must be after start date');
+
         const selectedWeekdays = Object.entries(planForm.weekdays)
           .filter(([, selected]) => selected)
           .map(([day]) => day);
@@ -180,7 +170,7 @@ export const useStudyPlan = (userId: number = 1) => {
 
         const planData = {
           plan_name: planForm.plan_name.trim(),
-          user_id: userId,
+          user_id: userId!,
           start_date: planForm.start_date,
           end_date: planForm.end_date,
           weekdays: selectedWeekdays,
@@ -194,10 +184,10 @@ export const useStudyPlan = (userId: number = 1) => {
           await createStudyPlan(planData);
           setSuccess('Plan created successfully!');
         }
-
         resetForm();
         await fetchPlans();
       } catch (err: any) {
+        console.error('Error saving plan:', err);
         setError(err.message || 'An error occurred while saving the plan');
       } finally {
         setLoading(false);
@@ -206,7 +196,6 @@ export const useStudyPlan = (userId: number = 1) => {
     [planForm, userId, editingPlan, fetchPlans]
   );
 
-  // Delete a plan (UI should ask confirmation before calling this!)
   const handleDelete = useCallback(
     async (planId: number) => {
       setLoading(true);
@@ -217,6 +206,7 @@ export const useStudyPlan = (userId: number = 1) => {
         setSuccess('Plan deleted successfully!');
         await fetchPlans();
       } catch (err: any) {
+        console.error('Error deleting plan:', err);
         setError('An error occurred while deleting the plan: ' + (err.message || String(err)));
       } finally {
         setLoading(false);
@@ -225,7 +215,6 @@ export const useStudyPlan = (userId: number = 1) => {
     [fetchPlans]
   );
 
-  // Reset the plan form and state
   const resetForm = useCallback(() => {
     setPlanForm({
       plan_name: '',
@@ -239,7 +228,6 @@ export const useStudyPlan = (userId: number = 1) => {
     setEditingPlan(null);
   }, []);
 
-  // Start editing a plan
   const startEdit = useCallback((plan: StudyPlan) => {
     const weekdaysObj: WeekdaysObj = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].reduce(
       (acc, d) => ({ ...acc, [d]: plan.weekdays.includes(d) }),
@@ -256,7 +244,6 @@ export const useStudyPlan = (userId: number = 1) => {
     setShowCreateForm(true);
   }, []);
 
-  // Toggle day in plan form
   const handleToggleDay = useCallback((day: string) => {
     setPlanForm(prev => ({
       ...prev,
@@ -264,7 +251,6 @@ export const useStudyPlan = (userId: number = 1) => {
     }));
   }, []);
 
-  // Add a study session - calls your backend PATCH `/streaks/:userId`
   const addStudySession = useCallback(
     async (minutes: number) => {
       if (!activePlan) {
@@ -275,14 +261,11 @@ export const useStudyPlan = (userId: number = 1) => {
         setError('Invalid minutes entered');
         return;
       }
-
       setLoading(true);
       setError('');
       setSuccess('');
-
       try {
         const today = new Date().toISOString().split('T')[0];
-        // POST to /streak/:userId with session info per your controller's updateStreak
         const res = await axios.post(
           `/streak/${userId}`,
           {
@@ -293,16 +276,12 @@ export const useStudyPlan = (userId: number = 1) => {
           },
           { baseURL: 'http://localhost:3000/api' }
         );
-
-        // On success, update local studyLogs and todayStudied from response
-        // Your controller returns streak info, so you might want to refetch logs or update state manually here
-
-        // For simplicity, let's refetch logs and plans again (to sync fresh data and metrics)
+        console.log('Added study session:', res.data);
         await fetchStudyLogs();
         await fetchPlans();
-
         setSuccess(`Added ${minutes} minutes to today's study log!`);
       } catch (err: any) {
+        console.error('Error adding study session:', err);
         setError(err.response?.data?.message || 'Failed to add study session');
       } finally {
         setLoading(false);
@@ -312,7 +291,6 @@ export const useStudyPlan = (userId: number = 1) => {
   );
 
   return {
-    // State
     planForm,
     plans,
     showCreateForm,
@@ -323,8 +301,6 @@ export const useStudyPlan = (userId: number = 1) => {
     activePlan,
     studyLogs,
     todayStudied,
-
-    // Actions
     setPlanForm,
     setShowCreateForm,
     setError,

@@ -63,7 +63,7 @@ const StudyPlanDetail: React.FC = () => {
     "2025-07-27",
     "2025-07-28",
     "2025-07-29",
-    "2025-07-30",
+    "2025-08-01",
   ];
   // Converts to Date objects
   const streakDates = streakDatesIso.map((d) => new Date(d));
@@ -272,24 +272,38 @@ const StudyPlanDetail: React.FC = () => {
                 const day = date.getDay();
                 const dayNum = date.getDate();
                 const isStudy = studyDayIndexes.includes(day);
-                const isPast = date < new Date(today.toDateString());
+                const isPastOrToday = date <= new Date(today.toDateString());
                 const current = isToday(date);
                 const streak = isStreakDate(date);
+
                 let className = "flex items-center justify-center relative h-8 w-8 rounded-full text-sm";
-                if (isStudy) className += " bg-green-100 text-green-700 font-semibold border";
+
+                if (isStudy && isPastOrToday) {
+                  className += " bg-green-100 text-green-700 font-semibold border";
+                } else if (isStudy && !isPastOrToday) {
+                  // Future study day - dimmed style
+                  className += " opacity-50 text-green-300";
+                } else if (!isStudy) {
+                  className += " text-gray-400 dark:text-gray-600";
+                }
+
                 if (current) className += " ring-2 ring-green-500";
-                if (isPast && !current) className += " text-green-300";
+
+                // Only show streak highlight for past or today
+                const showStreak = streak && isPastOrToday;
 
                 return (
                   <div
                     key={date.toISOString()}
                     className={className + " transition"}
-                    title={`${date.toDateString()}${isStudy ? " (Study Day)" : ""}${streak ? " - Streak Day" : ""}`}
+                    title={`${date.toDateString()}${isStudy ? " (Study Day)" : ""}${
+                      showStreak ? " - Streak Day" : ""
+                    }`}
                   >
                     {dayNum}
 
                     {/* Streak diagonal stripe overlay */}
-                    {streak && (
+                    {showStreak && (
                       <div
                         aria-hidden="true"
                         className="absolute inset-0 pointer-events-none rounded-full"
@@ -308,7 +322,7 @@ const StudyPlanDetail: React.FC = () => {
               })}
             </div>
             <div className="text-xs text-right text-green-700 dark:text-green-300">
-              Study days highlighted | Today is outlined | Streak days have diagonal stripes
+              Study days highlighted | Today is outlined | Streak days have diagonal stripes (only up to today)
             </div>
           </section>
         </div>

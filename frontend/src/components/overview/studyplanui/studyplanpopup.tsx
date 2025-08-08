@@ -48,6 +48,7 @@ interface StudyPlanPopupProps {
   setSuccess: (message: string) => void;
   setError: (message: string) => void;
   onPlanUpdate: () => void;
+
 }
 
 const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
@@ -702,6 +703,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   onPrevious
 }) => {
   const [loading, setLoading] = useState(false);
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   const handleSave = async () => {
     setLoading(true);

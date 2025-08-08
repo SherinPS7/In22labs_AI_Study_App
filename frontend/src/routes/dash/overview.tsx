@@ -16,38 +16,16 @@ import { toast } from "sonner";
 const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 import StudyProgress from './studyProgress';
 
-interface StudyPlan {
-  id: number;
-  plan_name: string;
-  user_id: number;
-  start_date: string;
-  end_date: string;
-  weekdays: string[];
-  study_time: number;
-}
-
-type User = {
-  userId: number;
-  firstname: string;
-  lastname: string;
-  mobile: string;
-};
-
-type SessionResponse = {
-  loggedIn: boolean;
-  user: User;
-};
-
 const Overview = () => {
   const [user, setUser] = useState<User | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<StudyPlan | null>(null);
   const [showProgressModal, setShowProgressModal] = useState(false);
-  const [selectedProgress, setSelectedProgress] = useState<any>(null); // Consider typing this
+  const [selectedProgress, setSelectedProgress] = useState<any>(null);
   const navigate = useNavigate();
 
-  // Fetch session
+  // Fetch session on mount
   useEffect(() => {
     const fetchSession = async () => {
       try {
@@ -56,6 +34,7 @@ const Overview = () => {
         });
         if (res.data.loggedIn) {
           setUser(res.data.user);
+          console.log('User session:', res.data.user);
         }
       } catch (err) {
         console.error('Failed to fetch session:', err);
@@ -65,6 +44,20 @@ const Overview = () => {
     };
     fetchSession();
   }, []);
+
+  // Always call the hook (unconditionally)
+  const studyPlanHook = useStudyPlan(user?.userId);
+
+  // Destructure with safe defaults
+  const plans = studyPlanHook?.plans || [];
+  const loading = studyPlanHook?.loading || false;
+  const error = studyPlanHook?.error || '';
+  const success = studyPlanHook?.success || '';
+  const activePlan = studyPlanHook?.activePlan || null;
+  const setError = studyPlanHook?.setError || (() => {});
+  const setSuccess = studyPlanHook?.setSuccess || (() => {});
+  const handleDelete = studyPlanHook?.handleDelete || (() => {});
+  const fetchPlans = studyPlanHook?.fetchPlans || (() => {});
 
   const {
     plans,
@@ -94,29 +87,35 @@ console.log('Max Study Time (Active Plans Only):', maxStudyTime);
     navigate('/MyLearnings');
   };
 
+
   const handleCreatePlan = () => {
     setEditingPlan(null);
     setIsPopupOpen(true);
   };
+
 
   const handleEditPlan = (plan: StudyPlan) => {
     setEditingPlan(plan);
     setIsPopupOpen(true);
   };
 
+
   const handleClosePopup = () => {
     setIsPopupOpen(false);
     setEditingPlan(null);
   };
+
 
   const handlePlanUpdate = () => {
     fetchPlans();
     handleClosePopup();
   };
 
+
   // Render fallback during session load
   if (sessionLoading) return <div className="p-4 text-center">Loading session...</div>;
   if (!user) return <div className="p-4 text-center text-red-500">Please log in to view this page</div>;
+
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 xl:max-w-screen-xl">
@@ -131,6 +130,7 @@ console.log('Max Study Time (Active Plans Only):', maxStudyTime);
             Continue your journey with our curator
           </p>
         </div>
+
 
         {/* Right: Search + Button */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center w-full md:w-auto">
@@ -158,6 +158,7 @@ console.log('Max Study Time (Active Plans Only):', maxStudyTime);
           <button onClick={() => setSuccess('')} className="float-right font-bold">&times;</button>
         </div>
       )}
+
 
       {/* StudyProgress gets maxStudyTime as target time */}
       <StudyProgress activePlan={activePlan} userId={user.userId} targetStudyTime={maxStudyTime} />
@@ -238,25 +239,17 @@ console.log('Max Study Time (Active Plans Only):', maxStudyTime);
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm text-gray-600">
                       <div>
-                        <p>
-                          <strong>Duration:</strong> {formatDate(plan.start_date)} - {formatDate(plan.end_date)}
-                        </p>
-                        <p>
-                          <strong>Daily Study Time:</strong> {plan.study_time} minutes
-                        </p>
+                        <p><strong>Duration:</strong> {formatDate(plan.start_date)} - {formatDate(plan.end_date)}</p>
+                        <p><strong>Daily Study Time:</strong> {plan.study_time} minutes</p>
                       </div>
                       <div>
-                        <p>
-                          <strong>Study Days:</strong> {Array.isArray(plan.weekdays) ? plan.weekdays.join(', ') : 'N/A'}
-                        </p>
+                        <p><strong>Study Days:</strong> {Array.isArray(plan.weekdays) ? plan.weekdays.join(', ') : 'N/A'}</p>
                         <p>
                           <strong>Status:</strong>
                           <span className={`ml-1 px-2 py-1 rounded text-xs ${
-                            status === 'active'
-                              ? 'bg-green-100 text-green-800'
-                              : status === 'upcoming'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-600'
+                            status === 'active' ? 'bg-green-100 text-green-800'
+                            : status === 'upcoming' ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-600'
                           }`}>
                             {status === 'active' ? 'Active' : status === 'upcoming' ? 'Upcoming' : 'Completed'}
                           </span>
@@ -290,9 +283,7 @@ console.log('Max Study Time (Active Plans Only):', maxStudyTime);
             >
               ✕
             </button>
-            <h2 className="text-xl font-bold mb-4">
-              Progress for: {selectedProgress.planName}
-            </h2>
+            <h2 className="text-xl font-bold mb-4">Progress for: {selectedProgress.planName}</h2>
             {selectedProgress.progress.length === 0 ? (
               <p>No progress data available.</p>
             ) : (
