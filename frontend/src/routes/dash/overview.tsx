@@ -59,17 +59,7 @@ const Overview = () => {
   const handleDelete = studyPlanHook?.handleDelete || (() => {});
   const fetchPlans = studyPlanHook?.fetchPlans || (() => {});
 
-  const {
-    plans,
-    loading,
-    error,
-    success,
-    activePlan,
-    setError,
-    setSuccess,
-    handleDelete,
-    fetchPlans,
-  } = useStudyPlan(user?.userId);
+ 
 
   // Compute max study_time across all plans (0 if none)
 // Filter only active plans before taking max
