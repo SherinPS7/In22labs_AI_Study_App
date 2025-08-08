@@ -141,7 +141,7 @@ export default function CalendarView() {
   const fetchPlans = async () => {
     if (!user) return;
     try {
-      const res = await fetch(`${BASE_URL}/study-plans?userId=${user.userId}`, {
+      const res = await fetch(`${BASE_URL}/studyplan/study-plans?userId=${user.userId}`, {
         method: "GET",
         credentials: "include",
       });

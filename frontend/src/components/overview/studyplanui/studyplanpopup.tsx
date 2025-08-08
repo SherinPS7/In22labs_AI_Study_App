@@ -65,7 +65,8 @@ const StudyPlanPopup: React.FC<StudyPlanPopupProps> = ({
   const [selectedCourses, setSelectedCourses] = useState<Course[]>([]);
    const [loading, setLoading] = React.useState<boolean>(false);
    const [isLoadingExistingPlan, setIsLoadingExistingPlan] = useState(false);
-   
+   const todayStr = new Date().toISOString().slice(0, 10);
+
  const [studyPlanData, setStudyPlanData] = useState<StudyPlanData>({
   plan_name: '',
   start_date: '',
@@ -764,6 +765,7 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
   onPrevious
 }) => {
   const [loading, setLoading] = useState(false);
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   const handleSave = async () => {
     setLoading(true);
@@ -835,24 +837,48 @@ const ReviewStep: React.FC<ReviewStepProps> = ({
                 Start Date *
               </label>
               <input
-                type="date"
-                value={studyPlanData.start_date}
-                onChange={e => setStudyPlanData((prev: any) => ({ ...prev, start_date: e.target.value }))}
-                className="w-full border rounded-md p-2"
-                required
-              />
+  type="date"
+  value={studyPlanData.start_date}
+  min={todayStr}
+  onChange={e => {
+    const newStartDate = e.target.value;
+    if (newStartDate >= todayStr) {
+      setStudyPlanData(prev => ({ ...prev, start_date: newStartDate }));
+
+      // If current end date is before new start date, clear end date
+      if (studyPlanData.end_date && studyPlanData.end_date < newStartDate) {
+        setStudyPlanData(prev => ({ ...prev, end_date: '' }));
+      }
+    } else {
+      // Optionally alert or ignore invalid date
+      alert('Start date cannot be before today.');
+    }
+  }}
+  className="w-full border rounded-md p-2"
+  required
+/>
+
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 End Date *
               </label>
-              <input
-                type="date"
-                value={studyPlanData.end_date}
-                onChange={e => setStudyPlanData((prev: any) => ({ ...prev, end_date: e.target.value }))}
-                className="w-full border rounded-md p-2"
-                required
-              />
+             <input
+  type="date"
+  value={studyPlanData.end_date}
+  min={studyPlanData.start_date || todayStr}
+  onChange={e => {
+    const newEndDate = e.target.value;
+    if (!studyPlanData.start_date || newEndDate >= studyPlanData.start_date) {
+      setStudyPlanData(prev => ({ ...prev, end_date: newEndDate }));
+    } else {
+      alert('End date cannot be before start date.');
+    }
+  }}
+  className="w-full border rounded-md p-2"
+  required
+/>
+
             </div>
           </div>
         </CardContent>

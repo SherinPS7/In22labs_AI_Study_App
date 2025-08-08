@@ -29,11 +29,11 @@ const overview = [
     url: "/overview",
     icon: ChartArea,
   },
-  {
-    title: "Feature Selection",
-    url: "/feature-selection",
-    icon: ChartArea,
-  },
+  // {
+  //   title: "Feature Selection",
+  //   url: "/feature-selection",
+  //   icon: ChartArea,
+  // },
     //   {
     //   title : "Learn",
     //   url : "/learn",
