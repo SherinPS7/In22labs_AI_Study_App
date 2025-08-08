@@ -761,64 +761,82 @@ useEffect(() => {
           {dayMessages.map((msg) => {
             const canDelete = isAdmin || msg.sender.id === userId;
             return (
-              <div key={msg.id} className={`flex flex-col max-w-[60%] ${msg.senderMe ? "ml-auto items-end" : "mr-auto items-start"} relative`}>
+              <div
+                key={msg.id}
+                className={`flex flex-col max-w-[60%] ${msg.senderMe ? "ml-auto items-end" : "mr-auto items-start"} relative`}
+              >
                 {!msg.senderMe && (
                   <div className="mb-1 text-sm font-semibold select-none text-gray-400">
                     {msg.sender.first_name} {msg.sender.last_name}
                   </div>
                 )}
-                <div className={`relative rounded-xl px-4 py-2 whitespace-pre-wrap break-words ${msg.senderMe ? "bg-green-700 text-green-100 rounded-br-none" : "bg-gray-700 text-gray-200 rounded-bl-none"}`}
-                  title={`${msg.sender.first_name} ${msg.sender.last_name}`} style={{ paddingRight: canDelete ? "48px" : undefined }}>
+                <div
+                  className={`relative rounded-xl px-4 py-2 whitespace-pre-wrap break-words ${
+                    msg.senderMe
+                      ? "bg-green-700 text-green-100 rounded-br-none"
+                      : msg.isPdfLink
+                      ? "bg-gradient-to-br from-gray-600 to-gray-700 text-gray-100 rounded-bl-none border border-gray-600 shadow-md"
+                      : "bg-gray-700 text-gray-200 rounded-bl-none"
+                  }`}
+                  title={`${msg.sender.first_name} ${msg.sender.last_name}`}
+                  style={{
+                    paddingRight: canDelete ? "48px" : undefined,
+                    paddingBottom: "20px",  // Space for timestamp to avoid overlap
+                    minWidth: "64px",       // Optional: improves appearance on short texts
+                  }}
+                >
                   {msg.isPdfLink ? (
                     <div className="select-text max-w-xs">
-                      <div className="flex items-center gap-2 text-gray-400 mb-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <div className="flex items-center gap-2 text-gray-200 mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8" />
                           <polyline points="14 2 14 8 20 8" />
                         </svg>
-                        <span className="text-sm font-semibold text-gray-300 select-text truncate" title={cleanFilename(msg.message_text.split("/").pop() || "")}>
+                        <span className="text-sm font-semibold select-text truncate" title={cleanFilename(msg.message_text.split("/").pop() || "")}>
                           {cleanFilename(msg.message_text.split("/").pop() || "")}
                         </span>
                       </div>
-                      <a href={`${SOCKET_URL}${msg.message_text}`} target="_blank" rel="noopener noreferrer" className="block w-full rounded bg-gray-700 px-4 py-1.5 text-center font-semibold text-gray-200 hover:bg-gray-600 transition select-none" aria-label="View PDF">View PDF</a>
+                      <a
+                        href={`${SOCKET_URL}${msg.message_text}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full rounded bg-gray-600 hover:bg-gray-500 px-4 py-1.5 text-center font-semibold text-gray-100 transition select-none"
+                        aria-label="View PDF"
+                      >
+                        View PDF
+                      </a>
                     </div>
                   ) : (
                     <div>{linkify(msg.message_text)}</div>
                   )}
 
                   {canDelete && (
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      handleDeleteMessage(msg.id);
-    }}
-    title="Delete message"
-    aria-label="Delete message"
-    className="absolute top-1 right-2 p-1 rounded-md hover:bg-red-700 transition-colors duration-200"
-    style={{ zIndex: 3 }}
-  >
-    {/* SVG Trash Icon */}
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-3 h-3 text-red-400 hover:text-red-100"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 6h18" />
-      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-      <path d="M10 11v6" />
-      <path d="M14 11v6" />
-      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-    </svg>
-  </button>
-)}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteMessage(msg.id);
+                      }}
+                      title="Delete message"
+                      aria-label="Delete message"
+                      className="absolute top-1 right-2 p-1 rounded-md hover:bg-red-700 transition-colors duration-200"
+                      style={{ zIndex: 3 }}
+                    >
+                      {/* SVG Trash Icon */}
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-red-400 hover:text-red-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18" />
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                      </svg>
+                    </button>
+                  )}
 
-
-                  <span className="absolute right-2 bottom-1 text-[10px] text-gray-300 select-none">
+                  <span
+                    className={`absolute text-[10px] text-gray-300 select-none whitespace-nowrap pointer-events-none ${
+                      msg.senderMe ? "right-2 bottom-1" : "left-2 bottom-1"
+                    }`}
+                  >
                     {formatTimeLabel(msg.createdAt)}
                   </span>
                 </div>
@@ -833,21 +851,50 @@ useEffect(() => {
 
   {/* Message Input and Upload PDF */}
   <div className="border-t border-gray-800 px-4 md:px-6 py-4 bg-[#181b16] flex items-center gap-3 rounded-b-lg">
-    <button type="button" onClick={handleUploadClick} className="text-gray-300 hover:text-gray-100 transition" title="Upload PDF" aria-label="Upload PDF">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <button
+      type="button"
+      onClick={handleUploadClick}
+      className="text-gray-300 hover:text-gray-100 transition"
+      title="Upload PDF"
+      aria-label="Upload PDF"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
       </svg>
     </button>
-    <Input placeholder="Type a message..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSend();
-      }
-    }} className="bg-[#2a392f] border border-gray-700 rounded-lg text-white focus:ring-0 focus:border-green-600" />
-    <Button onClick={handleSend} className="bg-green-700 hover:bg-green-600 rounded-lg px-5 py-2">Send</Button>
-    <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileChange} />
+    <Input
+      placeholder="Type a message..."
+      value={newMessage}
+      onChange={(e) => setNewMessage(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+        }
+      }}
+      className="bg-[#2a392f] border border-gray-700 rounded-lg text-white focus:ring-0 focus:border-green-600"
+    />
+    <Button onClick={handleSend} className="bg-green-700 hover:bg-green-600 rounded-lg px-5 py-2">
+      Send
+    </Button>
+    <input
+      ref={fileInputRef}
+      type="file"
+      accept=".pdf"
+      className="hidden"
+      onChange={handleFileChange}
+    />
   </div>
 </main>
+
+
 
 
       </div>

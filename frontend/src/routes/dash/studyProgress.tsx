@@ -21,7 +21,7 @@ interface DayMetric {
 interface MetricsType {
   todayStudied: number;
   todayTarget: number;
-  todayProgress: number; // percentage (0-100)
+  todayProgress: number; // 0-100
   currentStreak: number;
   bestStreak: number;
   weeklyTotalMinutes: number;
@@ -33,12 +33,16 @@ interface MetricsType {
 interface StudyProgressProps {
   userId: number;
   activePlan: StudyPlan | null;
+  targetStudyTime?: number; // override the plan's study time
 }
 
-const StudyProgress: React.FC<StudyProgressProps> = ({ userId, activePlan }) => {
+const StudyProgress: React.FC<StudyProgressProps> = ({ userId, activePlan, targetStudyTime }) => {
+  // Choose target time in order: prop -> plan -> default 60
+  const initialTarget = targetStudyTime || activePlan?.study_time || 60;
+
   const [metrics, setMetrics] = useState<MetricsType>({
     todayStudied: 0,
-    todayTarget: activePlan?.study_time || 60,
+    todayTarget: initialTarget,
     todayProgress: 0,
     currentStreak: 0,
     bestStreak: 0,
@@ -55,11 +59,6 @@ const StudyProgress: React.FC<StudyProgressProps> = ({ userId, activePlan }) => 
 
   const todayDateString = new Date().toISOString().slice(0, 10);
 
-  const getTodayStudied = (logs: DayMetric[]) => {
-    const todayLog = logs.find(log => log.date === todayDateString);
-    return todayLog?.minutesStudied || 0;
-  };
-
   const calcWeeklyStats = (logs: DayMetric[]) => {
     const totalMinutes = logs.reduce((sum, day) => sum + (day.minutesStudied || 0), 0);
     const daysStudied = logs.filter(day => day.studied).length;
@@ -67,111 +66,92 @@ const StudyProgress: React.FC<StudyProgressProps> = ({ userId, activePlan }) => 
     return { totalMinutes, daysStudied, average };
   };
 
-const fetchMetrics = async () => {
-  setLoading(true);
-  setError('');
-  try {
-    console.log(`Fetching metrics for userId: ${userId}...`);
-    const res = await axios.get(`http://localhost:3000/api/streak/${userId}`);
+  const fetchMetrics = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.get(`http://localhost:3000/api/streak/${userId}`);
 
-    console.log('Received data:', res.data);
+      const streakData = res.data.streak || {};
+      const todayStudyData = res.data.todayStudy || { minutesStudied: 0, completed: false };
+      const last7DaysRaw = res.data.last7Days || [];
 
-    const streakData = res.data.streak || {};
-    const todayStudyData = res.data.todayStudy || { minutesStudied: 0, completed: false };
-    const last7DaysRaw = res.data.last7Days || [];
+      const last7Days = last7DaysRaw.map((day: any) => ({
+        date: day.date,
+        studied: day.studied,
+        minutesStudied: day.minutesStudied || 0,
+      }));
 
-    const last7Days = last7DaysRaw.map((day: any) => ({
-      date: day.date,
-      studied: day.studied,
-      minutesStudied: day.minutesStudied || 0,
-    }));
+      const todayStudied = todayStudyData.minutesStudied || 0;
+      const { totalMinutes, daysStudied, average } = calcWeeklyStats(last7Days);
 
-    // Use today's study log from backend response:
-    const todayStudied = todayStudyData.minutesStudied || 0;
+      const todayTarget = targetStudyTime || activePlan?.study_time || 60;
+      const todayProgress = todayTarget > 0 ? Math.min((todayStudied / todayTarget) * 100, 100) : 0;
 
-    // You can optionally keep or adjust weekly stats as before
-    const { totalMinutes, daysStudied, average } = calcWeeklyStats(last7Days);
-
-    const todayTarget = activePlan?.study_time || 60;
-
-    // Calculate progress percentage:
-    const todayProgress = todayTarget > 0 ? Math.min((todayStudied / todayTarget) * 100, 100) : 0;
-
-    setMetrics({
-      todayStudied,
-      todayTarget,
-      todayProgress,
-      currentStreak: streakData.count || 0,
-      bestStreak: streakData.best_count || 0,
-      weeklyTotalMinutes: totalMinutes,
-      weeklyDaysStudied: daysStudied,
-      weeklyAverage: average,
-      last7Days,
-    });
-  } catch (err: any) {
-    setError('Failed to fetch progress data');
-    console.error('Error fetching metrics:', err);
-  } finally {
-    setLoading(false);
-  }
-};
-
+      setMetrics({
+        todayStudied,
+        todayTarget,
+        todayProgress,
+        currentStreak: streakData.count || 0,
+        bestStreak: streakData.best_count || 0,
+        weeklyTotalMinutes: totalMinutes,
+        weeklyDaysStudied: daysStudied,
+        weeklyAverage: average,
+        last7Days,
+      });
+    } catch (err: any) {
+      setError('Failed to fetch progress data');
+      console.error('Error fetching metrics:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (userId) {
-      console.log('User ID changed or active plan changed, fetching metrics');
       fetchMetrics();
     }
-  }, [userId, activePlan]);
+  }, [userId, activePlan, targetStudyTime]); // added targetStudyTime
 
   const openModal = () => {
     setMinutes('');
     setShowModal(true);
-    console.log('Opened modal for logging study minutes');
   };
 
   const closeModal = () => {
     setMinutes('');
     setShowModal(false);
-    console.log('Closed modal without logging');
   };
 
-const handleSubmit = async () => {
-  const minsNum = parseInt(minutes.trim(), 10);
-  if (isNaN(minsNum) || minsNum <= 0) {
-    alert('Please enter a valid positive number.');
-    return;
-  }
+  const handleSubmit = async () => {
+    const minsNum = parseInt(minutes.trim(), 10);
+    if (isNaN(minsNum) || minsNum <= 0) {
+      alert('Please enter a valid positive number.');
+      return;
+    }
 
-  setLoading(true);
-  setError('');
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const completed = minsNum >= (activePlan?.study_time || 60);
+    setLoading(true);
+    setError('');
+    try {
+      const today = todayDateString;
+      const target = targetStudyTime || activePlan?.study_time || 60;
+      const completed = minsNum >= target;
 
-    console.log(`Logging ${minsNum} minutes for userId ${userId} on ${today}, completed: ${completed}`);
+      await axios.post(`http://localhost:3000/api/streak/${userId}`, {
+        date: today,
+        completed,
+        minutesStudied: minsNum,
+      });
 
-    // Use the userId prop directly in your API endpoint URL
-    await axios.post(`http://localhost:3000/api/streak/${userId}`, {
-      date: today,
-      completed,
-      minutesStudied: minsNum,
-    });
-
-    console.log('Study session logged successfully, fetching updated metrics...');
-    await fetchMetrics();
-    closeModal();
-  } catch (err: any) {
-    setError('Failed to log study session');
-    console.error('Error logging study session:', err);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  // Optional: log render updates
-  console.log('Rendering StudyProgress, current metrics:', metrics);
+      await fetchMetrics();
+      closeModal();
+    } catch (err: any) {
+      setError('Failed to log study session');
+      console.error('Error logging study session:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -185,7 +165,7 @@ const handleSubmit = async () => {
             {activePlan && (
               <button
                 onClick={openModal}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
               >
                 + Log Study Time
               </button>
@@ -196,7 +176,6 @@ const handleSubmit = async () => {
           {loading && <p className="text-center text-gray-500">Loading...</p>}
           {error && <p className="text-center text-red-500">{error}</p>}
 
-          {/* Today's Progress Card */}
           {activePlan ? (
             <div className="bg-gray shadow-lg rounded-lg p-6 mb-4">
               <div className="text-center mb-4">
@@ -215,7 +194,9 @@ const handleSubmit = async () => {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {metrics.todayProgress >= 100 ? '🎉 Goal completed!' : `${Math.round(metrics.todayProgress)}% complete`}
+                  {metrics.todayProgress >= 100
+                    ? '🎉 Goal completed!'
+                    : `${Math.round(metrics.todayProgress)}% complete`}
                 </p>
               </div>
             </div>
@@ -225,9 +206,8 @@ const handleSubmit = async () => {
             </div>
           )}
 
-          {/* Streak and stats */}
+          {/* Stats */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
-            {/* Current Streak */}
             <div className="bg-gray shadow-lg rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center">
@@ -247,15 +227,8 @@ const handleSubmit = async () => {
                   </div>
                 </div>
               </div>
-
-              <div className="text-center">
-                <p className="text-green-600 font-medium">
-                  {metrics.currentStreak > 0 ? `🔥 ${metrics.currentStreak} day streak!` : 'Start your streak today!'}
-                </p>
-              </div>
             </div>
 
-            {/* Weekly Stats */}
             <div className="bg-gray shadow-lg rounded-lg p-6">
               <div className="flex items-center mb-3">
                 <Clock className="w-5 h-5 text-blue-500 mr-2" />
@@ -279,7 +252,6 @@ const handleSubmit = async () => {
               </div>
             </div>
 
-            {/* Monthly Goal */}
             <div className="bg-gray shadow-lg rounded-lg p-6">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-medium flex items-center">
@@ -299,11 +271,10 @@ const handleSubmit = async () => {
             </div>
           </div>
 
-          {/* Last 7 Days Progress */}
+          {/* Last 7 days */}
           <div className="bg-gray shadow-lg rounded-lg p-6">
             <h3 className="font-medium mb-3 flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              Last 7 Days
+              <Calendar className="w-4 h-4 mr-2" /> Last 7 Days
             </h3>
             <div className="flex justify-between gap-1 overflow-x-auto pb-2">
               {metrics.last7Days.map((day, idx) => (
@@ -341,6 +312,7 @@ const handleSubmit = async () => {
               </button>
               <button
                 onClick={handleSubmit}
+                disabled={loading}
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               >
                 Log Time

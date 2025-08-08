@@ -169,37 +169,40 @@ createStudyPlan: async (req, res) => {
 
 
   // GET /api/study-plans/:id
-  getStudyPlanById: async (req, res) => {
-    try {
-      const { id } = req.params;
-      const userId = req.session.userId;
+getStudyPlanById: async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.session?.userId;
 
-      if (!userId) {
-        return res.status(401).json({ error: 'Unauthorized: No session' });
-      }
-
-      if (isNaN(Number(id))) {
-        return res.status(400).json({ error: 'Invalid study plan ID' });
-      }
-
-      const studyPlan = await StudyPlan.findOne({
-        where: {
-          id,
-          user_id_foreign_key: userId
-        }
-      });
-
-      if (!studyPlan) {
-        return res.status(404).json({ error: 'Study plan not found or access denied' });
-      }
-
-      res.json(studyPlan);
-
-    } catch (error) {
-      console.error('Error fetching study plan:', error);
-      res.status(500).json({ error: 'Failed to fetch study plan' });
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: User not logged in' });
     }
-  },
+
+    const planId = Number(id);
+    if (isNaN(planId)) {
+      return res.status(400).json({ error: 'Invalid study plan ID' });
+    }
+
+    const studyPlan = await StudyPlan.findOne({
+      where: {
+        id: planId,
+        user_id: userId  // Correct foreign key field name
+      }
+    });
+
+    if (!studyPlan) {
+      return res.status(404).json({ error: 'Study plan not found or access denied' });
+    }
+
+    return res.json(studyPlan);
+
+  } catch (error) {
+    console.error('Error fetching study plan:', error);
+    return res.status(500).json({ error: 'Internal server error fetching study plan' });
+  }
+}
+
+,
 
   // PUT /api/study-plans/:id - Update study plan
 updateStudyPlan : async (req, res) => {

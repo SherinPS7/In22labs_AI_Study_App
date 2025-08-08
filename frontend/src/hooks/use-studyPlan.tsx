@@ -113,12 +113,19 @@ export const useStudyPlan = (userId: number = 1) => {
 
       // From your controller, studyLogs should be assembled from metrics or activePlans if needed
       // Here we'll fabricate studyLogs array using last7Days info or plan logs (adjust if API extended):
-      const logsFromMetrics = metrics?.last7Days?.map((day: any) => ({
-        date: day.date,
-        completed: day.studied,
-        minutesStudied: day.minutes,
-        planId: activePlans?.[0]?.id || null,
-      })) || [];
+      // const logsFromMetrics = metrics?.last7Days?.map((day: any) => ({
+      //   date: day.date,
+      //   completed: day.studied,
+      //   minutesStudied: day.minutes,
+      //   planId: activePlans?.[0]?.id || null,
+      // })) || [];
+      const logsFromMetrics: StudyLog[] = metrics?.last7Days?.map((day: any) => ({
+  date: day.date,
+  completed: day.studied,
+  minutesStudied: day.minutes,
+  planId: activePlans?.[0]?.id || null,
+})) || [];
+
 
       setStudyLogs(logsFromMetrics);
 

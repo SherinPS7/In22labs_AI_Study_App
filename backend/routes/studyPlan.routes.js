@@ -16,7 +16,7 @@ router.get('/study-plans/user/:userId', studyPlanController.getStudyPlansByUser)
 router.get('/study-plans/:id/with-courses', studyPlanController.getStudyPlanWithCourses);
 router.get('/:id/progress', studyPlanController.getStudyProgress);
 router.get('/:id/course-progress', studyPlanController.getStudyPlanVideoProgress);
-
+router.get('/study-plan/:id', studyPlanController.getStudyPlanById);
 
 router.get('/test-course-model', async (req, res) => {
     try {
